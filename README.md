@@ -1,4 +1,4 @@
-# ObjectDetection
+# Object Detection
 
 ## Work in progress
 
