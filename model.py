@@ -8,7 +8,7 @@ import torch.nn.functional as F
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-class VGGBase(nn):
+class VGGBase(nn.Module):
     """
     VGG base networ to get the  low level features
     """
@@ -41,7 +41,7 @@ class VGGBase(nn):
         self.pool5 = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)  # retains size because stride is 1 + padding is 1
 
         # Replacements for FC layers
-        self.conv6 = nn.Conv2d(512, 1024, kernel_size=3, padding=6, dilation=6)  # atrous conv
+        self.conv6 = nn.Conv2d(512, 1024, kernel_size=3, padding=6, dilation=6)  # dilated convolution
         self.conv7 = nn.Conv2d(1024, 1024, kernel_size=1)
 
         # Load pretrained weights
@@ -64,7 +64,7 @@ class VGGBase(nn):
         out = F.relu(self.conv3_1(out))  # (N, 256, H=75, W=75)
         out = F.relu(self.conv3_2(out))  # (N, 256, H=75, W=75)
         out = F.relu(self.conv3_3(out))  # (N, 256, H=75, W=75)
-        out = self.pool3(out)  # (N, 256, H=38, W=38)
+        out = self.pool3(out)  # (N, 256, H=38, W=38) it is 38 because of ceil_mode=True
 
         out = F.relu(self.conv4_1(out))  # (N, 512, H=38, W=38)
         out = F.relu(self.conv4_2(out))  # (N, 512, H=38, W=38)
@@ -91,19 +91,20 @@ class VGGBase(nn):
         STATE_DICT = self.state_dict()
         PARAMS = list(STATE_DICT.keys())
         vgg16 = models.vgg16(weights=models.VGG16_Weights.DEFAULT)
-        PRETRAINED_PARAMS = list(vgg16.state_dict().keys())
+        vgg16_state_dict = vgg16.state_dict()
+        PRETRAINED_PARAMS = list(vgg16_state_dict.keys())
 
         for i, param in enumerate(PARAMS[:-4]):
-            STATE_DICT[param] = vgg16.state_dict()[PRETRAINED_PARAMS[i]]
+            STATE_DICT[param] = vgg16_state_dict[PRETRAINED_PARAMS[i]]
 
         # Convert fc6 and fc7 into conv layers
-        conv_fc6_w = vgg16['classifier.0.weight'].data.view(4096, 512, 7, 7)  # (4096, 512, 7, 7)
-        conv_fc6_b = vgg16['classifier.0.bias'].data  # (4096)
+        conv_fc6_w = vgg16_state_dict['classifier.0.weight'].data.view(4096, 512, 7, 7)  # (4096, 512, 7, 7)
+        conv_fc6_b = vgg16_state_dict['classifier.0.bias'].data  # (4096)
         STATE_DICT['conv6.weight'] = decimate(conv_fc6_w, m=[4, None, 3, 3])  # (1024, 512, 3, 3)
         STATE_DICT['conv6.bias'] = decimate(conv_fc6_b, m=[4])  # (1024)
 
-        conv_fc7_w = vgg16['classifier.3.weight'].data.view(4096, 4096, 1, 1)  # (4096, 4096, 1, 1)
-        conv_fc7_b = vgg16['classifier.3.bias'].data  # (4096)
+        conv_fc7_w = vgg16_state_dict['classifier.3.weight'].data.view(4096, 4096, 1, 1)  # (4096, 4096, 1, 1)
+        conv_fc7_b = vgg16_state_dict['classifier.3.bias'].data  # (4096)
         STATE_DICT['conv7.weight'] = decimate(conv_fc7_w, m=[4, 4, None, None])  # (1024, 1024, 1, 1)
         STATE_DICT['conv7.bias'] = decimate(conv_fc7_b, m=[4])  # (1024)
 
@@ -189,12 +190,12 @@ class PredictionConvolutions(nn.Module):
         self.loc_conv11_2 = nn.Conv2d(256, self.n_boxes['conv11_2'] * 4, kernel_size=3, padding=1)  # (N, 16, H=1, W=1)
 
         # Class scores
-        self.cl_conv4_3 = nn.Conv2d(512, self.n_boxes['conv4_3'] * self.n_classes, 3, 1)  # (N, 21*4, H=38, W=38)
-        self.cl_conv7 = nn.Conv2d(1024, self.n_boxes['conv7'] * self.n_classes, 3, 1)  # (N, 21*6, H=19, W=19)
-        self.cl_conv8_2 = nn.Conv2d(512, self.n_boxes['conv8_2'] * self.n_classes, 3, 1)  # (N, 21*6, H=10, W=10)
-        self.cl_conv9_2 = nn.Conv2d(256, self.n_boxes['conv9_2'] * self.n_classes, 3, 1)  # (N, 21*6, H=5, W=5)
-        self.cl_conv10_2 = nn.Conv2d(256, self.n_boxes['conv10_2'] * self.n_classes, 3, 1)  # (N, 21*4, H=3, W=3)
-        self.cl_conv11_2 = nn.Conv2d(256, self.n_boxes['conv11_2'] * self.n_classes, 3, 1)  # (N, 21*4, H=1, W=1)
+        self.cl_conv4_3 = nn.Conv2d(512, self.n_boxes['conv4_3'] * self.n_classes, kernel_size=3, padding=1)
+        self.cl_conv7 = nn.Conv2d(1024, self.n_boxes['conv7'] * self.n_classes, kernel_size=3, padding=1)
+        self.cl_conv8_2 = nn.Conv2d(512, self.n_boxes['conv8_2'] * self.n_classes, kernel_size=3, padding=1)
+        self.cl_conv9_2 = nn.Conv2d(256, self.n_boxes['conv9_2'] * self.n_classes, kernel_size=3, padding=1)
+        self.cl_conv10_2 = nn.Conv2d(256, self.n_boxes['conv10_2'] * self.n_classes, kernel_size=3, padding=1)
+        self.cl_conv11_2 = nn.Conv2d(256, self.n_boxes['conv11_2'] * self.n_classes, kernel_size=3, padding=1)
 
         self.initialize_convolutions()
 
@@ -272,6 +273,13 @@ class PredictionConvolutions(nn.Module):
 
         return locs, class_scores
 
+    def initialize_convolutions(self):
+        for conv in self.children():
+            if isinstance(conv, nn.Conv2d):
+                nn.init.xavier_uniform_(conv.weight)
+                nn.init.constant_(conv.bias, 0.0)
+
+
 
 class SSD300(nn.Module):
     """
@@ -317,7 +325,8 @@ class SSD300(nn.Module):
 
         return locs, class_scores
 
-    def create_prior_boxes(self):
+    @staticmethod
+    def create_prior_boxes():
         """
         Create 8732 prior (default) boxes for the 300x300 image size.
         :return: (8732, 4) -> (cx, cy, w, h)
@@ -475,7 +484,7 @@ class MultiBoxLoss(nn.Module):
         self.alpha = alpha
 
         self.smooth_l1_loss = nn.SmoothL1Loss()
-        self.cross_entropy_loss = nn.CrossEntropyLoss()
+        self.cross_entropy_loss = nn.CrossEntropyLoss(reduction='none')
 
     def forward(self, predicted_locs, predicted_scores, boxes, labels):
         """
@@ -500,7 +509,9 @@ class MultiBoxLoss(nn.Module):
 
         for i in range(batch_size):
             n_objects = boxes[i].size(0)
-            overlap = find_jaccard_overlap(self.priors_xy, boxes[i])  # (8732, n_objects)
+            overlap = find_jaccard_overlap(boxes[i], self.priors_xy)  # (n_objects, 8732)
+
+            # For each prior, find the object that has the maximum overlap
             overlap_for_each_prior, object_for_each_prior = overlap.max(dim=0)  # (8732)
 
             # We don't want a situation where an object is not represented in our positive (non-background) priors -
@@ -526,7 +537,7 @@ class MultiBoxLoss(nn.Module):
 
             # Find the regression targets for each prior
             true_locs[i] = cxcy_to_gcxgcy(
-                xy_to_cxcy(boxes[i][object_for_each_prior]),  # (8732, 4)
+                xy_to_cxcy(boxes[i][object_for_each_prior]),  self.priors_cxcy  # (8732, 4)
             )
 
         # Identify priors that are positive (object/non-background)
@@ -551,7 +562,7 @@ class MultiBoxLoss(nn.Module):
             true_classes.view(-1)  # (batch_size * 8732)
         )  # (batch_size * 8732)
 
-        classification_loss = classification_loss.view(batch_size, -1)  # (batch_size, 8732)
+        classification_loss = classification_loss.view(batch_size, n_priors)  # (batch_size, 8732)
 
         # we already know which priors are positive, so we can ignore the classification loss for the negative priors
         classification_loss_pos = classification_loss[positive_priors]  # (sum(n_positives))
