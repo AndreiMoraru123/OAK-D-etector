@@ -62,7 +62,7 @@ def detect(original_image, min_score, max_overlap, top_k, suppress=None):
         return original_image
 
     # Annotate
-    font = ImageFont.truetype("./calibril.ttf", 25)
+    font = ImageFont.truetype("./calibril.ttf", 15)
 
     # Suppress specific classes, if needed
     for i in range(det_boxes.size(0)):
@@ -75,7 +75,7 @@ def detect(original_image, min_score, max_overlap, top_k, suppress=None):
 
         # Text
         text_size = font.getsize(det_labels[i].upper())
-        text_location = [box_location[0] + 2., box_location[1] - text_size[1]]
+        text_location = [box_location[0], box_location[1] - text_size[1]]
 
     return box_location, text_location, det_labels
 
@@ -162,8 +162,10 @@ with depthai.Device(pipeline) as device:
             box_location = [int(i) for i in box_location]
             text_location = [int(i) for i in text_location]
             cv2.rectangle(frame, (box_location[0], box_location[1]), (box_location[2], box_location[3]), (0, 255, 0), 2)
-            cv2.putText(frame, det_labels[0].upper(), (text_location[0], text_location[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                        (0, 255, 0), 2)
+            cv2.rectangle(frame, (text_location[0], text_location[1] - 10),
+                          (text_location[0] + 30, text_location[1] + 5), (0, 255, 0), -1)
+            cv2.putText(frame, det_labels[0].upper(), (text_location[0], text_location[1]), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, (255, 255, 255), 2)
 
             # Show the frame
             cv2.imshow("rgb", frame)
