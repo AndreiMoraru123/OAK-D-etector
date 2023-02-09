@@ -81,6 +81,7 @@ with depthai.Device(pipeline) as device:
             for detection in detections:
                 # for each bounding box, we first normalize it to match the frame size
                 bbox = frameNorm(frame, (detection.xmin, detection.ymin, detection.xmax, detection.ymax))
+                print(bbox)
                 # and then draw a rectangle on the frame to show the actual result
                 cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 0, 0), 2)
             # After all the drawing is finished, we show the frame on the screen
