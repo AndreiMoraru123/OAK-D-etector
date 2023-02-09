@@ -18,12 +18,12 @@ voc_labels = ('background',  # always index 0
 label_map = {k: v for v, k in enumerate(voc_labels)}
 rev_label_map = {v: k for k, v in label_map.items()}  # Inverse mapping
 
-# Color map
-voc_colormap = [[0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0], [0, 0, 128], [128, 0, 128], [0, 128, 128],
-                [128, 128, 128], [64, 0, 0], [192, 0, 0], [64, 128, 0], [192, 128, 0], [64, 0, 128], [192, 0, 128],
-                [64, 128, 128], [192, 128, 128], [0, 64, 0], [128, 64, 0], [0, 192, 0], [128, 192, 0], [0, 64, 128]]
+# Color map for bounding boxes of detected objects from https://sashat.me/2017/01/11/list-of-20-simple-distinct-colors/
+distinct_colors = ['#e6194b', '#3cb44b', '#ffe119', '#0082c8', '#f58231', '#911eb4', '#46f0f0', '#f032e6',
+                   '#d2f53c', '#fabebe', '#008080', '#000080', '#aa6e28', '#fffac8', '#800000', '#aaffc3', '#808000',
+                   '#ffd8b1', '#e6beff', '#808080', '#FFFFFF']
 
-label_colormap = dict(zip(label_map.keys(), voc_colormap))
+label_color_map = {k: distinct_colors[i] for i, k in enumerate(label_map.keys())}
 
 
 def parse_annotation(annotation_path: str) -> dict:
