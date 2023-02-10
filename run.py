@@ -73,12 +73,13 @@ def detect(original_image, min_score, max_overlap, top_k, suppress=None):
         box_location = det_boxes[i].tolist()
 
         # Text
-        text_size = font.getsize(det_labels[i].upper())
+        text_size = cv2.getTextSize(det_labels[i].upper(), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                                    fontScale=0.5, thickness=1)[0]
         text_location = [box_location[0], box_location[1] - text_size[1]]
 
         # TextBox
-        text_box_location = [box_location[0], box_location[1] - text_size[1] - 20,
-                            box_location[0] + text_size[0] + 20., box_location[1]]
+        text_box_location = [box_location[0], box_location[1] - text_size[1] - 20.,
+                            box_location[0] + text_size[0] + 5., box_location[1]]
 
     return box_location, text_location, text_box_location, det_labels
 
@@ -157,9 +158,6 @@ with depthai.Device(pipeline) as device:
             text_location = [int(i) for i in text_location]
             text_box_location = [int(i) for i in text_box_location]
             cv2.rectangle(frame, (box_location[0], box_location[1]), (box_location[2], box_location[3]), (0, 255, 0), 2)
-            # cv2.rectangle(frame, (text_location[0], text_location[1] - 10),
-            #               (text_location[0] + 70, text_location[1] + 5), (0, 255, 0), -1)
-            # rectangle background at text_box_location
             cv2.rectangle(frame, (text_box_location[0], text_box_location[1]),
                           (text_box_location[2], text_box_location[3]), (0, 255, 0), -1)
             cv2.putText(frame, det_labels[0].upper(), (text_location[0], text_location[1]), cv2.FONT_HERSHEY_SIMPLEX,
