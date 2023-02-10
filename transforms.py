@@ -1,31 +1,6 @@
 import random
-import numpy as np
 import torch
 import torchvision.transforms.functional as FT
-import cv2
-
-
-class Scale(object):
-
-    def __init__(self):
-        self.mean = np.array([0.485, 0.456, 0.406]).reshape(1, 1, 3)  # add mean to image with 3rd color channel
-        self.std = np.array([0.229, 0.224, 0.225]).reshape(1, 1, 3)  # add std to image with 3rd color channel
-
-    def __call__(self, image):
-        image = np.array(image)
-        image = image / 255.0
-        image = (image - self.mean) / self.std
-        return np.array(image)
-
-
-class Normalize(object):
-
-    def __call__(self, image):
-        image_copy = np.copy(image)
-        image_copy = cv2.cvtColor(image_copy, cv2.COLOR_RGB2GRAY)
-        image_copy = image_copy / 255.0
-
-        return image_copy
 
 
 def resize(image, boxes, dims=(300, 300), return_percent_coords=True):
@@ -33,11 +8,13 @@ def resize(image, boxes, dims=(300, 300), return_percent_coords=True):
     Resize image. For the SSD300, resize to (300, 300).
     Since percent/fractional coordinates are calculated for the bounding boxes (w.r.t image dimensions) in this process,
     you may choose to retain them.
-    :param return_percent_coords: if True, bounding boxes are returned as percent coordinates (w.r.t. resized image dimensions)
+    :param return_percent_coords: if True, bounding boxes are returned as percent coordinates
+     (w.r.t. resized image dimensions)
     :param dims: dimensions to resize to, a tuple (width, height)
     :param image: image, a PIL Image
     :param boxes: bounding boxes in boundary coordinates, a tensor of dimensions (n_objects, 4)
-    :return: resized image, updated bounding box coordinates (or fractional coordinates, in which case they remain the same)
+    :return: resized image, updated bounding box coordinates (or fractional coordinates,
+     in which case they remain the same)
     """
     # Resize image
     new_image = FT.resize(image, dims)
@@ -53,45 +30,13 @@ def resize(image, boxes, dims=(300, 300), return_percent_coords=True):
     return new_image, new_boxes
 
 
-class Resize(object):
-    """
-    Resize image and bounding boxes.
-    """
-    def __init__(self, dims):
-        self.dims = dims
-
-    def __call__(self, image, boxes):
-        return resize(image, boxes, dims=self.dims)
-
-
-class ToTensor(object):
-
-    def __call__(self, image, boxes, labels, difficulties):
-        """
-        Convert numpy images and bounding boxes to tensors.
-        :param image: image, a numpy array of dimensions (C, H, W)
-        :param boxes: bounding boxes, a numpy array of dimensions (n_objects, 4)
-        :param labels: labels of objects, a numpy array of dimensions (n_objects)
-        :param difficulties: difficulties of detection of objects, a numpy array of dimensions (n_objects)
-        :return: a tensor image, tensors of bounding boxes, labels, and difficulties
-        """
-        # Convert numpy image to torch image
-        image = FT.to_tensor(image)
-
-        # Convert numpy arrays to tensors
-        boxes = torch.from_numpy(boxes)
-        labels = torch.from_numpy(labels)
-        difficulties = torch.from_numpy(difficulties)
-
-        return image, boxes, labels, difficulties
-
-
 def find_intersection(set_1, set_2):
     """
     Find the intersection of every box combination between two sets of boxes that are in boundary coordinates.
     :param set_1: set 1, a tensor of dimensions (n1, 4)
     :param set_2: set 2, a tensor of dimensions (n2, 4)
-    :return: intersection of each of the boxes in set 1 with respect to each of the boxes in set 2, a tensor of dimensions (n1, n2)
+    :return: intersection of each of the boxes in set 1 with respect to each of the boxes in set 2,
+     a tensor of dimensions (n1, n2)
     """
 
     # PyTorch auto-broadcasts singleton dimensions
@@ -106,7 +51,8 @@ def find_jaccard_overlap(set_1, set_2):
     Find the Jaccard Overlap (IoU) of every box combination between two sets of boxes that are in boundary coordinates.
     :param set_1: set 1, a tensor of dimensions (n1, 4)
     :param set_2: set 2, a tensor of dimensions (n2, 4)
-    :return: Jaccard Overlap of each of the boxes in set 1 with respect to each of the boxes in set 2, a tensor of dimensions (n1, n2)
+    :return: Jaccard Overlap of each of the boxes in set 1 with respect to each of the boxes in set 2,
+     a tensor of dimensions (n1, n2)
     """
 
     # Find intersections
@@ -206,29 +152,6 @@ def random_crop(image, boxes, labels, difficulties):
             return new_image, new_boxes, new_labels, new_difficulties
 
 
-class RandomCrop(object):
-    """
-    Performs a random crop in the manner stated in the paper. Helps to learn to detect larger and partial objects.
-    Note that some objects may be cut out entirely.
-    Adapted from
-
-    :param image: image, a PIL Image
-    :param boxes: bounding boxes in boundary coordinates, a tensor of dimensions (n_objects, 4)
-    :param labels: labels of objects, a tensor of dimensions (n_objects)
-    :param difficulties: difficulties of detection of these objects, a tensor of dimensions (n_objects)
-    :return: cropped image, updated bounding box coordinates, updated labels, updated difficulties
-    """
-
-    def __init__(self, image, boxes, labels, difficulties):
-        self.image = image
-        self.boxes = boxes
-        self.labels = labels
-        self.difficulties = difficulties
-
-    def __call__(self):
-        return random_crop(self.image, self.boxes, self.labels, self.difficulties)
-
-
 def photometric_distort(image):
     """
     Distort brightness, contrast, saturation, and hue, each with a 50% chance, in random order.
@@ -259,12 +182,6 @@ def photometric_distort(image):
     return new_image
 
 
-class PhotometricDistort(object):
-
-    def __call__(self, image):
-        return photometric_distort(image)
-
-
 def flip(image, boxes):
     """
     Flip image horizontally.
@@ -282,27 +199,6 @@ def flip(image, boxes):
     new_boxes = new_boxes[:, [2, 1, 0, 3]]
 
     return new_image, new_boxes
-
-
-class Flip(object):
-
-    def __init__(self, image, boxes):
-        self.image = image
-        self.boxes = boxes
-
-    def __call__(self):
-        """
-            Randomly flips the image and bounding boxes horizontally with a probability of 0.5.
-            :param image: image, a PIL Image
-            :param boxes: bounding boxes in boundary coordinates, a tensor of dimensions (n_objects, 4)
-            :param labels: labels of objects, a tensor of dimensions (n_objects)
-            :param difficulties: difficulties of detection of these objects, a tensor of dimensions (n_objects)
-            :return: flipped image, updated bounding box coordinates, updated labels, updated difficulties
-            """
-        if random.random() < 0.5:
-            return self.image, self.boxes
-
-        return flip(self.image, self.boxes)
 
 
 def expand(image, boxes: torch.Tensor, filler: list) -> tuple:
@@ -340,26 +236,3 @@ def expand(image, boxes: torch.Tensor, filler: list) -> tuple:
         0)  # (n_objects, 4), n_objects is the no. of objects in this image
 
     return new_image, new_boxes
-
-
-class Expand(object):
-    def __init__(self, image, boxes, mean=None):
-        if mean is None:
-            self.mean = [0.485, 0.456, 0.406]
-        self.mean = mean
-        self.image = image
-        self.boxes = boxes
-
-    def __call__(self):
-        """
-        Randomly expands the image and bounding boxes by a factor between 1 and 4.
-        :param image: image, a PIL Image
-        :param boxes: bounding boxes in boundary coordinates, a tensor of dimensions (n_objects, 4)
-        :param labels: labels of objects, a tensor of dimensions (n_objects)
-        :param difficulties: difficulties of detection of these objects, a tensor of dimensions (n_objects)
-        :return: expanded image, updated bounding box coordinates, updated labels, updated difficulties
-        """
-        if random.random() < 0.5:
-            return self.image, self.boxes
-
-        return expand(self.image, self.boxes, self.mean)
