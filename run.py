@@ -3,10 +3,10 @@ import blobconverter
 import cv2
 import depthai
 import numpy as np
+import torch
 from onnxsim import simplify
-from torchvision import transforms
 from utils import *
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageFont
 from pathlib import Path
 from torchvision import transforms
 from cv2 import cuda
@@ -29,7 +29,6 @@ def detect(original_image, min_score, max_overlap, top_k, suppress=None):
     :param suppress: classes that you know for sure cannot be in the image or you do not want in the image, a list
     :return: annotated image, a PIL Image
     """
-
     original_image = Image.fromarray(original_image)
 
     # Transform
@@ -62,7 +61,7 @@ def detect(original_image, min_score, max_overlap, top_k, suppress=None):
         return original_image
 
     # Annotate
-    font = ImageFont.truetype("./calibril.ttf", 15)
+    font = ImageFont.truetype("./calibril.ttf", 20)
 
     # Suppress specific classes, if needed
     for i in range(det_boxes.size(0)):
@@ -77,7 +76,11 @@ def detect(original_image, min_score, max_overlap, top_k, suppress=None):
         text_size = font.getsize(det_labels[i].upper())
         text_location = [box_location[0], box_location[1] - text_size[1]]
 
-    return box_location, text_location, det_labels
+        # TextBox
+        text_box_location = [box_location[0], box_location[1] - text_size[1] - 20,
+                            box_location[0] + text_size[0] + 20., box_location[1]]
+
+    return box_location, text_location, text_box_location, det_labels
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -109,7 +112,7 @@ xout_rgb = pipeline.createXLinkOut()
 xout_nn = pipeline.createXLinkOut()
 
 # Properties
-cam_rgb.setPreviewSize(300, 300)
+cam_rgb.setPreviewSize(1000, 500)
 cam_rgb.setInterleaved(False)
 cam_rgb.setFps(40)
 
@@ -135,16 +138,7 @@ with depthai.Device(pipeline) as device:
     q_nn = device.getOutputQueue("nn")
 
     # Here, some default values are defined. Frame will be an image from "rgb" stream,
-    # detections will contain nn results
     frame = None
-    detections = []
-
-    # Since the detections returned by nn have values from <0..1> range, they need to be multiplied by frame
-    # width/height to receive the actual position of the bounding box on the image
-    def frameNorm(frame, bbox):
-        normVals = np.full(len(bbox), frame.shape[0])
-        normVals[::2] = frame.shape[1]
-        return (np.clip(np.array(bbox), 0, 1) * normVals).astype(int)
 
     # Main loop
     while True:
@@ -157,13 +151,17 @@ with depthai.Device(pipeline) as device:
             frame = in_rgb.getCvFrame()
 
         if frame is not None:
-            box_location, text_location, det_labels = detect(frame, min_score=0.5, max_overlap=0.5, top_k=20)
+            box_location, text_location, text_box_location, det_labels = detect(frame, min_score=0.5, max_overlap=0.5, top_k=20)
             # Draw the bounding boxes on the frame
             box_location = [int(i) for i in box_location]
             text_location = [int(i) for i in text_location]
+            text_box_location = [int(i) for i in text_box_location]
             cv2.rectangle(frame, (box_location[0], box_location[1]), (box_location[2], box_location[3]), (0, 255, 0), 2)
-            cv2.rectangle(frame, (text_location[0], text_location[1] - 10),
-                          (text_location[0] + 30, text_location[1] + 5), (0, 255, 0), -1)
+            # cv2.rectangle(frame, (text_location[0], text_location[1] - 10),
+            #               (text_location[0] + 70, text_location[1] + 5), (0, 255, 0), -1)
+            # rectangle background at text_box_location
+            cv2.rectangle(frame, (text_box_location[0], text_box_location[1]),
+                          (text_box_location[2], text_box_location[3]), (0, 255, 0), -1)
             cv2.putText(frame, det_labels[0].upper(), (text_location[0], text_location[1]), cv2.FONT_HERSHEY_SIMPLEX,
                         0.5, (255, 255, 255), 2)
 
