@@ -1,9 +1,8 @@
 import json
 import os
 import torch
-import random
 import xml.etree.ElementTree as ET
-import torchvision.transforms.functional as FT
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -166,7 +165,8 @@ def decimate(tensor: torch.Tensor, m: list) -> torch.Tensor:
 
 def xy_to_cxcy(xy: torch.Tensor) -> torch.Tensor:
     """
-    Convert bounding boxes from boundary coordinates (x_min, y_min, x_max, y_max) to center-size coordinates (c_x, c_y, w, h).
+    Convert bounding boxes from boundary coordinates (x_min, y_min, x_max, y_max) to
+     center-size coordinates (c_x, c_y, w, h).
     :param xy: bounding boxes in boundary coordinates, a tensor of size (n_boxes, 4)
     :return: bounding boxes in center-size coordinates, a tensor of size (n_boxes, 4)
     """
@@ -176,7 +176,8 @@ def xy_to_cxcy(xy: torch.Tensor) -> torch.Tensor:
 
 def cxcy_to_xy(cxcy: torch.Tensor) -> torch.Tensor:
     """
-    Convert bounding boxes from center-size coordinates (c_x, c_y, w, h) to boundary coordinates (x_min, y_min, x_max, y_max).
+    Convert bounding boxes from center-size coordinates (c_x, c_y, w, h) to
+     boundary coordinates (x_min, y_min, x_max, y_max).
     :param cxcy: bounding boxes in center-size coordinates, a tensor of size (n_boxes, 4)
     :return: bounding boxes in boundary coordinates, a tensor of size (n_boxes, 4)
     """
@@ -186,7 +187,8 @@ def cxcy_to_xy(cxcy: torch.Tensor) -> torch.Tensor:
 
 def cxcy_to_gcxgcy(cxcy: torch.Tensor, priors_cxcy: torch.Tensor) -> torch.Tensor:
     """
-    Encode bounding boxes (that are in center-size form) w.r.t. the corresponding prior boxes (that are in center-size form).
+    Encode bounding boxes (that are in center-size form) w.r.t.
+    the corresponding prior boxes (that are in center-size form).
     For the center coordinates, find the offset with respect to the prior box, and scale by the size of the prior box.
     For the size coordinates, scale by the size of the prior box, and convert to the log-space.
     In the model, we are predicting bounding box coordinates in this encoded form.
@@ -221,7 +223,8 @@ def find_intersection(set_1: torch.Tensor, set_2: torch.Tensor) -> torch.Tensor:
     Find the intersection of every box combination between two sets of boxes that are in boundary coordinates.
     :param set_1: set 1, a tensor of dimensions (n1, 4)
     :param set_2: set 2, a tensor of dimensions (n2, 4)
-    :return: intersection of each of the boxes in set 1 with respect to each of the boxes in set 2, a tensor of dimensions (n1, n2)
+    :return: intersection of each of the boxes in set 1 with respect to each of the boxes in set 2,
+     a tensor of dimensions (n1, n2)
     """
 
     # PyTorch auto-broadcasts singleton dimensions
@@ -236,7 +239,8 @@ def find_jaccard_overlap(set_1: torch.Tensor, set_2: torch.Tensor) -> torch.Tens
     Find the Jaccard Overlap (IoU) of every box combination between two sets of boxes that are in boundary coordinates.
     :param set_1: set 1, a tensor of dimensions (n1, 4)
     :param set_2: set 2, a tensor of dimensions (n2, 4)
-    :return: Jaccard Overlap of each of the boxes in set 1 with respect to each of the boxes in set 2, a tensor of dimensions (n1, n2)
+    :return: Jaccard Overlap of each of the boxes in set 1 with respect to each of the boxes in set 2,
+     a tensor of dimensions (n1, n2)
     """
 
     # Find intersections

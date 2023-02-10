@@ -113,7 +113,8 @@ class PascalVOCDataset(Dataset):
     @staticmethod
     def collate_fn(batch):
         """
-        Since each image may have a different number of objects, we need a collate function (to be passed to the DataLoader).
+        Since each image may have a different number of objects, we need a collate function
+         (to be passed to the DataLoader).
         This describes how to combine these tensors of different sizes. We use lists.
         Note: this need not be defined in this Class, can be standalone.
         :param batch: an iterable of N sets from __getitem__()

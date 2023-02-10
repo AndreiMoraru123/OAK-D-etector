@@ -16,9 +16,10 @@ to_tensor = transforms.ToTensor()
 normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 
 
-def detect(model,original_image, min_score, max_overlap, top_k, suppress=None):
+def detect(model, original_image, min_score, max_overlap, top_k, suppress=None):
     """
     Detect objects in an image with a trained SSD300, and visualize the results.
+    :param model: SSD300, the neural network
     :param original_image: image, a PIL Image
     :param min_score: minimum threshold for a detected box to be considered a match for a certain class
     :param max_overlap: maximum overlap two boxes can have so that the one with the lower score is not suppressed via
@@ -74,7 +75,7 @@ def detect(model,original_image, min_score, max_overlap, top_k, suppress=None):
 
         # TextBox
         text_box_location = [box_location[0], box_location[1] - text_size[1] - 20.,
-                            box_location[0] + text_size[0] + 5., box_location[1]]
+                             box_location[0] + text_size[0] + 5., box_location[1]]
 
     return box_location, text_location, text_box_location, det_labels
 
