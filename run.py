@@ -24,7 +24,8 @@ def detect(original_image, min_score, max_overlap, top_k, suppress=None):
     Detect objects in an image with a trained SSD300, and visualize the results.
     :param original_image: image, a PIL Image
     :param min_score: minimum threshold for a detected box to be considered a match for a certain class
-    :param max_overlap: maximum overlap two boxes can have so that the one with the lower score is not suppressed via Non-Maximum Suppression (NMS)
+    :param max_overlap: maximum overlap two boxes can have so that the one with the lower score is not suppressed via
+     Non-Maximum Suppression (NMS)
     :param top_k: if there are a lot of resulting detection across all classes, keep only the top 'k'
     :param suppress: classes that you know for sure cannot be in the image or you do not want in the image, a list
     :return: annotated image, a PIL Image
@@ -59,9 +60,6 @@ def detect(original_image, min_score, max_overlap, top_k, suppress=None):
     if det_boxes is None:
         print('No objects found!')
         return original_image
-
-    # Annotate
-    font = ImageFont.truetype("./calibril.ttf", 20)
 
     # Suppress specific classes, if needed
     for i in range(det_boxes.size(0)):
@@ -101,7 +99,8 @@ assert check, "Simplified ONNX model could not be validated"
 onnx.save(model_simp, 'ssd300-sim.onnx')
 
 # Convert the model to blob
-blobconverter.from_onnx(model='ssd300-sim.onnx', output_dir='ssd300-sim.blob', shaves=8, use_cache=True, data_type='FP16')
+blobconverter.from_onnx(model='ssd300-sim.onnx', output_dir='ssd300-sim.blob',
+                        shaves=6, use_cache=True, data_type='FP16')
 
 # Create pipeline
 pipeline = depthai.Pipeline()
@@ -124,7 +123,7 @@ cam_rgb.preview.link(xout_rgb.input)
 nn.out.link(xout_nn.input)
 
 # Load model
-nn.setBlobPath(Path('ssd300-sim.blob/ssd300-sim_openvino_2021.4_8shave.blob'))
+nn.setBlobPath(Path('ssd300-sim.blob/ssd300-sim_openvino_2021.4_6shave.blob'))
 nn.setNumInferenceThreads(2)
 nn.input.setBlocking(False)
 nn.setNumPoolFrames(4)
@@ -152,7 +151,8 @@ with depthai.Device(pipeline) as device:
             frame = in_rgb.getCvFrame()
 
         if frame is not None:
-            box_location, text_location, text_box_location, det_labels = detect(frame, min_score=0.5, max_overlap=0.5, top_k=20)
+            box_location, text_location, text_box_location, det_labels = detect(frame, min_score=0.5,
+                                                                                max_overlap=0.5, top_k=20)
             # Draw the bounding boxes on the frame
             box_location = [int(i) for i in box_location]
             text_location = [int(i) for i in text_location]
