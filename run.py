@@ -2,24 +2,21 @@ import onnx
 import blobconverter
 import cv2
 import depthai
-import numpy as np
-import torch
 from onnxsim import simplify
 from utils import *
-from PIL import Image, ImageFont
+from PIL import Image
 from pathlib import Path
 from torchvision import transforms
 from cv2 import cuda
 
 cuda.setDevice(0)
 
-
 resize = transforms.Resize((300, 300))
 to_tensor = transforms.ToTensor()
 normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 
 
-def detect(original_image, min_score, max_overlap, top_k, suppress=None):
+def detect(model,original_image, min_score, max_overlap, top_k, suppress=None):
     """
     Detect objects in an image with a trained SSD300, and visualize the results.
     :param original_image: image, a PIL Image
@@ -82,90 +79,104 @@ def detect(original_image, min_score, max_overlap, top_k, suppress=None):
     return box_location, text_location, text_box_location, det_labels
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def configure():
 
-# Load model checkpoint
-checkpoint = torch.load('checkpoints/checkpoint_ssd300.pt', map_location=device)
-model = checkpoint['model']
-model.eval()
+    global device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Export the model
-dummy_input = torch.randn(1, 3, 300, 300, device='cuda')
-torch.onnx.export(model, dummy_input, "ssd300.onnx", verbose=False)
+    # Load model checkpoint
+    checkpoint = torch.load('checkpoints/checkpoint_ssd300.pt', map_location=device)
+    model = checkpoint['model']
+    model.eval()
 
-# Simplify the model
-model_simp, check = simplify('ssd300.onnx')
-assert check, "Simplified ONNX model could not be validated"
-onnx.save(model_simp, 'ssd300-sim.onnx')
+    # Export the model
+    dummy_input = torch.randn(1, 3, 300, 300, device='cuda')
+    torch.onnx.export(model, dummy_input, "ssd300.onnx", verbose=False)
 
-# Convert the model to blob
-blobconverter.from_onnx(model='ssd300-sim.onnx', output_dir='ssd300-sim.blob',
-                        shaves=6, use_cache=True, data_type='FP16')
+    # Simplify the model
+    model_simp, check = simplify('ssd300.onnx')
+    assert check, "Simplified ONNX model could not be validated"
+    onnx.save(model_simp, 'ssd300-sim.onnx')
 
-# Create pipeline
-pipeline = depthai.Pipeline()
+    # Convert the model to blob
+    blobconverter.from_onnx(model='ssd300-sim.onnx', output_dir='ssd300-sim.blob',
+                            shaves=6, use_cache=True, data_type='FP16')
 
-# Define sources and outputs
-cam_rgb = pipeline.createColorCamera()
-nn = pipeline.createNeuralNetwork()
-xout_rgb = pipeline.createXLinkOut()
-xout_nn = pipeline.createXLinkOut()
+    # Create pipeline
+    pipeline = depthai.Pipeline()
 
-# Properties
-cam_rgb.setPreviewSize(1000, 500)
-cam_rgb.setInterleaved(False)
-cam_rgb.setFps(40)
+    # Define sources and outputs
+    cam_rgb = pipeline.createColorCamera()
+    nn = pipeline.createNeuralNetwork()
+    xout_rgb = pipeline.createXLinkOut()
+    xout_nn = pipeline.createXLinkOut()
 
-# Linking
-xout_rgb.setStreamName("rgb")
-xout_nn.setStreamName("nn")
-cam_rgb.preview.link(xout_rgb.input)
-nn.out.link(xout_nn.input)
+    # Properties
+    cam_rgb.setPreviewSize(1000, 500)
+    cam_rgb.setInterleaved(False)
+    cam_rgb.setFps(40)
 
-# Load model
-nn.setBlobPath(Path('ssd300-sim.blob/ssd300-sim_openvino_2021.4_6shave.blob'))
-nn.setNumInferenceThreads(2)
-nn.input.setBlocking(False)
-nn.setNumPoolFrames(4)
+    # Linking
+    xout_rgb.setStreamName("rgb")
+    xout_nn.setStreamName("nn")
+    cam_rgb.preview.link(xout_rgb.input)
+    nn.out.link(xout_nn.input)
 
-# Pipeline is now finished, and we need to find an available device to run our pipeline
-# we are using context manager here that will dispose the device after we stop using it
-with depthai.Device(pipeline) as device:
-    # From this point, the Device will be in "running" mode and will start sending data via XLink
+    # Load model
+    nn.setBlobPath(Path('ssd300-sim.blob/ssd300-sim_openvino_2021.4_6shave.blob'))
+    nn.setNumInferenceThreads(2)
+    nn.input.setBlocking(False)
+    nn.setNumPoolFrames(4)
 
-    # To consume the device results, we get two output queues from the device, with stream names we assigned earlier
-    q_rgb = device.getOutputQueue("rgb")
-    q_nn = device.getOutputQueue("nn")
+    return pipeline, model
 
-    # Here, some default values are defined. Frame will be an image from "rgb" stream,
-    frame = None
 
-    # Main loop
-    while True:
-        # Instead of get (blocking), we use tryGet (nonblocking) which will return the available data or None otherwise
-        in_rgb = q_rgb.tryGet()
-        in_nn = q_nn.tryGet()
+def run(pipeline, model):
+    # Pipeline is now finished, and we need to find an available device to run our pipeline
+    # we are using context manager here that will dispose the device after we stop using it
+    with depthai.Device(pipeline) as device:
+        # From this point, the Device will be in "running" mode and will start sending data via XLink
 
-        if in_rgb is not None:
-            # Retrieve 'bgr' (opencv format) frame
-            frame = in_rgb.getCvFrame()
+        # To consume the device results, we get two output queues from the device, with stream names we assigned earlier
+        q_rgb = device.getOutputQueue("rgb")
+        q_nn = device.getOutputQueue("nn")
 
-        if frame is not None:
-            box_location, text_location, text_box_location, det_labels = detect(frame, min_score=0.5,
-                                                                                max_overlap=0.5, top_k=20)
-            # Draw the bounding boxes on the frame
-            box_location = [int(i) for i in box_location]
-            text_location = [int(i) for i in text_location]
-            text_box_location = [int(i) for i in text_box_location]
-            cv2.rectangle(frame, (box_location[0], box_location[1]), (box_location[2], box_location[3]), (0, 255, 0), 2)
-            cv2.rectangle(frame, (text_box_location[0], text_box_location[1]),
-                          (text_box_location[2], text_box_location[3]), (0, 255, 0), -1)
-            cv2.putText(frame, det_labels[0].upper(), (text_location[0], text_location[1]), cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5, (255, 255, 255), 2)
+        # Here, some default values are defined. Frame will be an image from "rgb" stream,
+        frame = None
 
-            # Show the frame
-            cv2.imshow("rgb", frame)
-            if cv2.waitKey(1) == ord('q'):
-                break
+        # Main loop
+        while True:
+            # Instead of get (blocking), we use tryGet (nonblocking)
+            # which will return the available data or None otherwise
+            in_rgb = q_rgb.tryGet()
+            in_nn = q_nn.tryGet()
 
-# The device is disposed automatically when exiting the 'with' statement
+            if in_rgb is not None:
+                # Retrieve 'bgr' (opencv format) frame
+                frame = in_rgb.getCvFrame()
+
+            if frame is not None:
+                box_location, text_location, text_box_location, det_labels = detect(model, frame, min_score=0.5,
+                                                                                    max_overlap=0.5, top_k=20)
+                # Draw the bounding boxes on the frame
+                box_location = [int(i) for i in box_location]
+                text_location = [int(i) for i in text_location]
+                text_box_location = [int(i) for i in text_box_location]
+                cv2.rectangle(frame, (box_location[0], box_location[1]),
+                              (box_location[2], box_location[3]), (0, 255, 0), 2)
+                cv2.rectangle(frame, (text_box_location[0], text_box_location[1]),
+                              (text_box_location[2], text_box_location[3]), (0, 255, 0), -1)
+                cv2.putText(frame, det_labels[0].upper(), (text_location[0], text_location[1]),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+                # Show the frame
+                cv2.imshow("rgb", frame)
+                if cv2.waitKey(1) == ord('q'):
+                    break
+
+    # The device is disposed automatically when exiting the 'with' statement
+
+
+if __name__ == '__main__':
+    pipeline, model = configure()
+    run(pipeline, model)
