@@ -2,7 +2,6 @@ import time
 import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
-from utils import *
 from dataset import PascalVOCDataset
 from model import *
 

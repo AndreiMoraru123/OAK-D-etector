@@ -59,6 +59,8 @@ def detect(model, original_image, min_score, max_overlap, top_k, suppress=None):
         print('No objects found!')
         return original_image
 
+    box_locations, text_locations, text_box_locations= [], [], []
+
     # Suppress specific classes, if needed
     for i in range(det_boxes.size(0)):
         if suppress is not None:
@@ -67,17 +69,21 @@ def detect(model, original_image, min_score, max_overlap, top_k, suppress=None):
 
         # Boxes
         box_location = det_boxes[i].tolist()
+        box_locations.append(box_location)
 
         # Text
         text_size = cv2.getTextSize(det_labels[i].upper(), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                                     fontScale=0.5, thickness=1)[0]
+
         text_location = [box_location[0], box_location[1] - text_size[1]]
+        text_locations.append(text_location)
 
         # TextBox
         text_box_location = [box_location[0], box_location[1] - text_size[1] - 20.,
                              box_location[0] + text_size[0] + 5., box_location[1]]
+        text_box_locations.append(text_box_location)
 
-    return box_location, text_location, text_box_location, det_labels
+    return box_locations, text_locations, text_box_locations, det_labels
 
 
 def configure():
@@ -154,18 +160,23 @@ def run(pipeline, model):
                 frame = in_rgb.getCvFrame()
 
             if frame is not None:
-                box_location, text_location, text_box_location, det_labels = detect(model, frame, min_score=0.5,
-                                                                                    max_overlap=0.5, top_k=20)
+                box_locations, text_locations, text_box_locations, det_labels = detect(model, frame, min_score=0.7,
+                                                                                    max_overlap=0.3, top_k=20)
+
                 # Draw the bounding boxes on the frame
-                box_location = [int(i) for i in box_location]
-                text_location = [int(i) for i in text_location]
-                text_box_location = [int(i) for i in text_box_location]
-                cv2.rectangle(frame, (box_location[0], box_location[1]),
-                              (box_location[2], box_location[3]), (0, 255, 0), 2)
-                cv2.rectangle(frame, (text_box_location[0], text_box_location[1]),
-                              (text_box_location[2], text_box_location[3]), (0, 255, 0), -1)
-                cv2.putText(frame, det_labels[0].upper(), (text_location[0], text_location[1]),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                for i in range(len(box_locations)):
+                    box_location = box_locations[i]
+                    text_location = text_locations[i]
+                    text_box_location = text_box_locations[i]
+                    box_location = [int(i) for i in box_location]
+                    text_location = [int(i) for i in text_location]
+                    text_box_location = [int(i) for i in text_box_location]
+                    cv2.rectangle(frame, (box_location[0], box_location[1]),
+                                  (box_location[2], box_location[3]), (0, 255, 0), 2)
+                    cv2.rectangle(frame, (text_box_location[0], text_box_location[1]),
+                                  (text_box_location[2], text_box_location[3]), (0, 255, 0), -1)
+                    cv2.putText(frame, det_labels[i].upper(), (text_location[0], text_location[1]),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
                 # Show the frame
                 cv2.imshow("rgb", frame)
