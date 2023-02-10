@@ -82,11 +82,8 @@ def detect(model, original_image, min_score, max_overlap, top_k, suppress=None):
 
 def configure():
 
-    global device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     # Load model checkpoint
-    checkpoint = torch.load('checkpoints/checkpoint_ssd300.pt', map_location=device)
+    checkpoint = torch.load('checkpoints/checkpoint_ssd300.pt', map_location='cuda')
     model = checkpoint['model']
     model.eval()
 

@@ -3,9 +3,6 @@ import os
 import torch
 import xml.etree.ElementTree as ET
 
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 # Label map
 voc_labels = ('background',  # always index 0
               'aeroplane', 'bicycle', 'bird', 'boat',

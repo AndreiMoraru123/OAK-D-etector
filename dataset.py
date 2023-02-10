@@ -1,9 +1,7 @@
-import torch
 from torch.utils.data import Dataset
 import json
 import os
 from PIL import Image
-from torchvision import transforms
 from transforms import *
 
 
@@ -20,7 +18,6 @@ def transform(image, boxes, labels, difficulties, split):
     assert split in {'TRAIN', 'TEST'}
 
     # Mean and standard deviation of ImageNet data that our base VGG from torchvision was trained on
-    # see: https://pytorch.org/docs/stable/torchvision/models.html
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
 

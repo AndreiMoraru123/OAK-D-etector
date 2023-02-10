@@ -1,6 +1,5 @@
 from torch import nn
 from utils import *
-from itertools import product
 from math import sqrt
 import torchvision.models as models
 import torch.nn.functional as F

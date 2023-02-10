@@ -12,8 +12,7 @@ torch.cuda.empty_cache()
 data_folder = r'D:\ObjectDetection\PascalVOC'  # folder with data files
 keep_difficult = True  # difficult objects to detect
 
-n_classes = len(label_map)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+n_classes = len(label_map)  # number of different types of objects
 
 # Learning parameters
 checkpoint = 'checkpoints/checkpoint_ssd300.pt'  # path to model checkpoint, None if none
