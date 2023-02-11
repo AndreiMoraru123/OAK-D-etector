@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import Dataset
 import json
 import os
@@ -91,13 +92,13 @@ class PascalVOCDataset(Dataset):
         objects = self.objects[i]
         boxes = torch.FloatTensor(objects['boxes'])  # (n_objects, 4)
         labels = torch.LongTensor(objects['labels'])  # (n_objects)
-        difficulties = torch.ByteTensor(objects['difficulties'])  # (n_objects)
+        difficulties = torch.BoolTensor(objects['difficulties'])  # (n_objects)
 
         # Discard difficult objects, if desired
         if not self.keep_difficult:
-            boxes = boxes[1 - difficulties]
-            labels = labels[1 - difficulties]
-            difficulties = difficulties[1 - difficulties]
+            boxes = boxes[~difficulties]
+            labels = labels[~difficulties]
+            difficulties = difficulties[~difficulties]
 
         # Apply transformations
         image, boxes, labels, difficulties = transform(image, boxes, labels, difficulties, split=self.split)
