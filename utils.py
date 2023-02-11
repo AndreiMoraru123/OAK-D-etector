@@ -18,15 +18,13 @@ rev_label_map = {v: k for k, v in label_map.items()}  # Inverse mapping
 def parse_annotation(annotation_path: str) -> dict:
     """
     Parse an annotation given its path
-    :param annotation_path:
+    :param annotation_path: the path to the annotation file
     :return: dict containing lists of bounding boxes, labels, difficulties
     """
     tree = ET.parse(annotation_path)
     root = tree.getroot()
 
-    boxes = []
-    labels = []
-    difficulties = []
+    boxes, labels, difficulties = [], [], []
 
     for obj in root.iter('object'):
 
@@ -101,8 +99,7 @@ def create_data_lists(voc07_path: str, voc12_path: str, output_folder: str) -> N
     print(f'Path to output folder: {output_folder}')
 
     # validation data
-    test_images = []
-    test_objects = []
+    test_images, test_objects = [], []
     n_objects = 0
 
     # Find IDs of images in the training set

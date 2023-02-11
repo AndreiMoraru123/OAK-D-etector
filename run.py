@@ -48,8 +48,10 @@ def detect(model, original_image, min_score, max_overlap, top_k, suppress=None):
 
     # Transform to original image dimensions
     original_dims = torch.FloatTensor(
-        [original_image.width, original_image.height, original_image.width, original_image.height]).unsqueeze(0)
-    det_boxes = det_boxes * original_dims
+        [original_image.width, original_image.height, original_image.width, original_image.height]
+    ).unsqueeze(0)
+
+    det_boxes = det_boxes * original_dims  # scale to original dimensions
 
     # Decode class integer labels
     det_labels = [rev_label_map[l] for l in det_labels[0].to('cpu').tolist()]

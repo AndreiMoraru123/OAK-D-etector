@@ -338,7 +338,7 @@ class SSD300(nn.Module):
                          'conv8_2': [1.0, 2.0, 3.0, 0.5, 0.333], 'conv9_2': [1.0, 2.0, 3.0, 0.5, 0.333],
                          'conv10_2': [1.0, 2.0, 0.5], 'conv11_2': [1.0, 2.0, 0.5]}
 
-        fmaps = list(fmap_dims.keys())
+        fmaps = list(fmap_dims.keys())  # 'conv4_3', 'conv7', 'conv8_2', 'conv9_2', 'conv10_2', 'conv11_2' feature maps
         prior_boxes = []
 
         for k, fmap in enumerate(fmaps):
