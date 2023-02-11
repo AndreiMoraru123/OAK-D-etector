@@ -7,3 +7,4 @@ torchvision~=0.14.0+cu117
 onnx~=1.13.0
 numpy~=1.21.6
 onnxsim~=0.4.17
+tqdm~=4.64.1
