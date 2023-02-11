@@ -4,6 +4,7 @@ import torch.optim
 import torch.utils.data
 from dataset import PascalVOCDataset
 from model import *
+from tqdm import tqdm
 
 torch.cuda.empty_cache()
 
@@ -94,7 +95,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
     losses = AverageMeter()
     end = time.time()
 
-    for i, (images, boxes, labels, _) in enumerate(train_loader):
+    for i, (images, boxes, labels, _) in tqdm(enumerate(train_loader), total=len(train_loader)):
         # measure data loading time
         data_time.update(time.time() - end)
 
@@ -127,9 +128,9 @@ def train(train_loader, model, criterion, optimizer, epoch):
         # Print status
         if i % print_freq == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
-                  'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Data Time {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})'.format(epoch, i, len(train_loader),
+                  'Batch Time {batch_time.val:.3f}\t'
+                  'Data Time {data_time.val:.3f}\t'
+                  'Loss {loss.val:.4f}'.format(epoch, i, len(train_loader),
                                                                 batch_time=batch_time,
                                                                 data_time=data_time, loss=losses))
 
