@@ -279,7 +279,6 @@ class PredictionConvolutions(nn.Module):
                 nn.init.constant_(conv.bias, 0.0)
 
 
-
 class SSD300(nn.Module):
     """
     SSD300 architecture based on the base VGG-16 layers, auxiliary and prediction conv layers.
@@ -393,7 +392,6 @@ class SSD300(nn.Module):
 
             # Lists to store boxes and scores for this image
             image_boxes, image_labels, image_scores = [], [], []
-            max_scores, best_labels = predicted_scores[i].max(dim=1)  # (8732)
 
             # Check for each class
             for c in range(1, self.n_classes):

@@ -28,15 +28,15 @@ def parse_annotation(annotation_path: str) -> dict:
     labels = []
     difficulties = []
 
-    for object in root.iter('object'):
+    for obj in root.iter('object'):
 
-        difficult = int(object.find('difficult').text == '1')
+        difficult = int(obj.find('difficult').text == '1')
 
-        label = object.find('name').text.lower().strip()
+        label = obj.find('name').text.lower().strip()
         if label not in label_map:
             continue
 
-        bbox = object.find('bndbox')
+        bbox = obj.find('bndbox')
 
         xmin = int(bbox.find('xmin').text) - 1
         ymin = int(bbox.find('ymin').text) - 1
@@ -72,9 +72,9 @@ def create_data_lists(voc07_path: str, voc12_path: str, output_folder: str) -> N
         with open(os.path.join(path, 'ImageSets/Main/trainval.txt')) as f:
             ids = f.read().splitlines()
 
-        for id in ids:
+        for i in ids:
             # Parse annotation's XML file
-            objects = parse_annotation(os.path.join(path, 'Annotations', id + '.xml'))
+            objects = parse_annotation(os.path.join(path, 'Annotations', i + '.xml'))
 
             if len(objects['boxes']) == 0:
                 continue
@@ -84,7 +84,7 @@ def create_data_lists(voc07_path: str, voc12_path: str, output_folder: str) -> N
             n_objects += len(objects)
 
             # Add image to list
-            train_images.append(os.path.join(path, 'JPEGImages', id + '.jpg'))
+            train_images.append(os.path.join(path, 'JPEGImages', i + '.jpg'))
 
     assert len(train_images) == len(train_objects)
 
@@ -109,9 +109,9 @@ def create_data_lists(voc07_path: str, voc12_path: str, output_folder: str) -> N
     with open(os.path.join(voc07_path, 'ImageSets/Main/test.txt')) as f:
         ids = f.read().splitlines()
 
-    for id in ids:
+    for i in ids:
         # Parse annotation's XML file
-        objects = parse_annotation(os.path.join(voc07_path, 'Annotations', id + '.xml'))
+        objects = parse_annotation(os.path.join(voc07_path, 'Annotations', i + '.xml'))
 
         if len(objects['boxes']) == 0:
             continue
@@ -121,7 +121,7 @@ def create_data_lists(voc07_path: str, voc12_path: str, output_folder: str) -> N
         n_objects += len(objects)
 
         # Add image to list
-        test_images.append(os.path.join(voc07_path, 'JPEGImages', id + '.jpg'))
+        test_images.append(os.path.join(voc07_path, 'JPEGImages', i + '.jpg'))
 
     assert len(test_images) == len(test_objects)
 
