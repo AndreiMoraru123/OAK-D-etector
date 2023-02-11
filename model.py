@@ -412,7 +412,7 @@ class SSD300(nn.Module):
                 # Non-Maximum Suppression (NMS)
                 # Keep only the boxes that have an IoU of less than 'max_overlap' with the previously selected boxes
                 # We'll end up with only the best boxes, as the worst ones will have been removed
-                supress = torch.zeros(n_above_min_score, dtype=torch.bool).to(device)  # (n_above_min_score)
+                supress = torch.zeros(n_above_min_score, dtype=torch.uint8).to(device)  # (n_above_min_score)
 
                 # Consider each box in order of decreasing scores
                 for box in range(class_decoded_locs.size(0)):

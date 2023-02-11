@@ -161,8 +161,9 @@ def run(pipeline, model):
 
             if frame is not None:
                 box_locations, text_locations, text_box_locations, det_labels = detect(model, frame, min_score=0.7,
-                                                                                    max_overlap=0.3, top_k=20)
+                                                                                       max_overlap=0.3, top_k=20)
 
+                print(box_locations)
                 # Draw the bounding boxes on the frame
                 for i in range(len(box_locations)):
                     box_location = box_locations[i]

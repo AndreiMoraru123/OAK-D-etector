@@ -2,6 +2,7 @@ import time
 import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
+from utils import *
 from dataset import PascalVOCDataset
 from model import *
 from tqdm import tqdm
@@ -12,30 +13,27 @@ torch.cuda.empty_cache()
 data_folder = r'D:\ObjectDetection\PascalVOC'  # folder with data files
 keep_difficult = True  # difficult objects to detect
 
-n_classes = len(label_map)  # number of different types of objects
+n_classes = len(label_map)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Learning parameters
-checkpoint: str = 'checkpoints/checkpoint_ssd300.pt'  # path to model checkpoint, None if none
-batch_size: int = 25  # batch size
-iterations: int = 120000  # number of iterations to train
-workers: int = 0  # number of workers for loading data in the DataLoader
-print_freq: int = 100  # print training status every __ batches
-lr: float = 1e-3  # learning rate
-decay_lr_at: [int] = [80000, 100000]  # decay learning rate after these many iterations
-decay_lr_to: float = 0.1  # decay learning rate to this fraction of the existing learning rate
-momentum: float = 0.9  # momentum
-weight_decay: float = 5e-4  # weight decay
-grad_clip: float = 0.0  # clip if gradients are exploding
+checkpoint = 'checkpoints/checkpoint_ssd300.pt'  # path to model checkpoint, None if none
+batch_size = 25  # batch size
+iterations = 120000  # number of iterations to train
+workers = 0  # number of workers for loading data in the DataLoader
+print_freq = 100  # print training status every __ batches
+lr = 1e-3  # learning rate
+decay_lr_at = [80000, 100000]  # decay learning rate after these many iterations
+decay_lr_to = 0.1  # decay learning rate to this fraction of the existing learning rate
+momentum = 0.9  # momentum
+weight_decay = 5e-4  # weight decay
+grad_clip = None  # clip if gradients are exploding
 
 cudnn.benchmark = True
 
 
 def main():
-    """
-    Training.
-    :return: checkpoint
-    """
-    global checkpoint, decay_lr_at
+    global start_epoch, label_map, epoch, checkpoint, decay_lr_at
 
     if checkpoint is None:
         start_epoch = 0
@@ -104,8 +102,8 @@ def train(train_loader, model, criterion, optimizer, epoch):
         data_time.update(time.time() - end)
 
         images = images.to(device)  # (batch_size (N), 3, 300, 300)
-        boxes = [box.to(device) for box in boxes]
-        labels = [label.to(device) for label in labels]
+        boxes = [b.to(device) for b in boxes]
+        labels = [l.to(device) for l in labels]
 
         # Forward prop.
         predicted_locs, predicted_scores = model(images)
@@ -118,7 +116,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
         loss.backward()
 
         # Clip gradients, if necessary
-        if grad_clip is not 0.0:
+        if grad_clip is not None:
             clip_gradient(optimizer, grad_clip)
 
         # Update model
