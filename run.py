@@ -161,7 +161,7 @@ def run(pipeline, model):
                 frame = in_rgb.getCvFrame()
 
             if frame is not None:
-                box_locations, text_locations, text_box_locations, det_labels = detect(model, frame, min_score=0.9,
+                box_locations, text_locations, text_box_locations, det_labels = detect(model, frame, min_score=0.7,
                                                                                        max_overlap=0.2, top_k=20)
 
                 # Draw the bounding boxes on the frame
