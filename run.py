@@ -72,7 +72,8 @@ def detect(model, original_image, min_score, max_overlap, top_k, suppress=None):
         box_locations.append(box_location)
 
         # Text
-        text_size = cv2.getTextSize(det_labels[i].upper(), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+        text_size = cv2.getTextSize(det_labels[i].upper(),
+                                    fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                                     fontScale=0.5, thickness=1)[0]
 
         text_location = [box_location[0], box_location[1] - text_size[1]]
@@ -160,10 +161,9 @@ def run(pipeline, model):
                 frame = in_rgb.getCvFrame()
 
             if frame is not None:
-                box_locations, text_locations, text_box_locations, det_labels = detect(model, frame, min_score=0.7,
-                                                                                       max_overlap=0.3, top_k=20)
+                box_locations, text_locations, text_box_locations, det_labels = detect(model, frame, min_score=0.9,
+                                                                                       max_overlap=0.2, top_k=20)
 
-                print(box_locations)
                 # Draw the bounding boxes on the frame
                 for i in range(len(box_locations)):
                     box_location = box_locations[i]
