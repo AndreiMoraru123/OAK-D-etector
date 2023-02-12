@@ -10,10 +10,10 @@ from tqdm import tqdm
 torch.cuda.empty_cache()
 
 # Data parameters
-data_folder = r'D:\ObjectDetection\PascalVOC'  # folder with data files
-keep_difficult = True  # difficult objects to detect
+data_folder: str = r'D:\ObjectDetection\PascalVOC'  # folder with data files
+keep_difficult: bool = True  # difficult objects to detect
 
-n_classes = len(label_map)
+n_classes: int = len(label_map)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Learning parameters
@@ -25,7 +25,7 @@ print_freq: int = 100  # print training status every __ batches
 lr: float = 1e-3  # learning rate
 decay_lr_at: [int] = [80000, 100000]  # decay learning rate after these many iterations
 decay_lr_to: float = 0.1  # decay learning rate to this fraction of the existing learning rate
-# momentum: float = 0.9  # momentum
+momentum: float = 0.9  # momentum
 weight_decay: float = 5e-4  # weight decay
 grad_clip: float = 0.0  # clip if gradients are exploding
 
@@ -48,8 +48,8 @@ def main():
                 else:
                     not_biases.append(param)
 
-        optimizer = torch.optim.Adam(params=[{'params': biases, 'lr': 2 * lr}, {'params': not_biases}],
-                                     lr=lr, weight_decay=weight_decay)
+        optimizer = torch.optim.SGD(params=[{'params': biases, 'lr': 2 * lr}, {'params': not_biases}],
+                                    lr=lr, momentum=momentum, weight_decay=weight_decay, nesterov=True)
 
     else:
         checkpoint = torch.load(checkpoint)

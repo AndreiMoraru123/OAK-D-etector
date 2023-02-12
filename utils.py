@@ -211,7 +211,7 @@ def find_intersection(set_1: torch.Tensor, set_2: torch.Tensor) -> torch.Tensor:
     :param set_1: set 1, a tensor of dimensions (n1, 4)
     :param set_2: set 2, a tensor of dimensions (n2, 4)
     :return: intersection of each of the boxes in set 1 with respect to each of the boxes in set 2,
-     a tensor of dimensions (n1, n2)
+     a tensor of dimensions (n1, n2
     """
 
     # PyTorch auto-broadcasts singleton dimensions

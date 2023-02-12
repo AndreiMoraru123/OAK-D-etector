@@ -1,3 +1,4 @@
+import numpy as np
 import onnx
 import blobconverter
 import cv2
@@ -25,7 +26,7 @@ def detect(model, original_image, min_score, max_overlap, top_k, suppress=None):
     :param max_overlap: maximum overlap two boxes can have so that the one with the lower score is not suppressed via
      Non-Maximum Suppression (NMS)
     :param top_k: if there are a lot of resulting detection across all classes, keep only the top 'k'
-    :param suppress: classes that you know for sure cannot be in the image or you do not want in the image, a list
+    :param suppress: classes that you know for sure cannot be in the image, or you do not want in the image, a list
     :return: annotated image, a PIL Image
     """
     original_image = Image.fromarray(original_image)
@@ -61,7 +62,7 @@ def detect(model, original_image, min_score, max_overlap, top_k, suppress=None):
         print('No objects found!')
         return original_image
 
-    box_locations, text_locations, text_box_locations= [], [], []
+    box_locations, text_locations, text_box_locations = [], [], []
 
     # Suppress specific classes, if needed
     for i in range(det_boxes.size(0)):
@@ -119,9 +120,10 @@ def configure():
     xout_nn = pipeline.createXLinkOut()
 
     # Properties
+    # cam_rgb.setVideoSize(300, 300)
     cam_rgb.setPreviewSize(1000, 500)
     cam_rgb.setInterleaved(False)
-    cam_rgb.setFps(40)
+    cam_rgb.setFps(35)
 
     # Linking
     xout_rgb.setStreamName("rgb")
@@ -135,6 +137,9 @@ def configure():
     nn.input.setBlocking(False)
     nn.setNumPoolFrames(4)
 
+    # cam_rgb.video.link(nn.input)
+    # cam_rgb.preview.link(nn.input)
+
     return pipeline, model
 
 
@@ -145,8 +150,8 @@ def run(pipeline, model):
         # From this point, the Device will be in "running" mode and will start sending data via XLink
 
         # To consume the device results, we get two output queues from the device, with stream names we assigned earlier
-        q_rgb = device.getOutputQueue("rgb")
-        q_nn = device.getOutputQueue("nn")
+        q_rgb = device.getOutputQueue("rgb", maxSize=4, blocking=False)
+        q_nn = device.getOutputQueue("nn", maxSize=4, blocking=False)
 
         # Here, some default values are defined. Frame will be an image from "rgb" stream,
         frame = None
@@ -163,8 +168,8 @@ def run(pipeline, model):
                 frame = in_rgb.getCvFrame()
 
             if frame is not None:
-                box_locations, text_locations, text_box_locations, det_labels = detect(model, frame, min_score=0.7,
-                                                                                       max_overlap=0.2, top_k=20)
+                box_locations, text_locations, text_box_locations, det_labels = detect(model, frame, min_score=0.8,
+                                                                                       max_overlap=0.7, top_k=200)
 
                 # Draw the bounding boxes on the frame
                 for i in range(len(box_locations)):

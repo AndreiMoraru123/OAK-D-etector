@@ -37,7 +37,7 @@ class VGGBase(nn.Module):
         self.conv5_1 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.conv5_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.conv5_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.pool5 = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)  # retains size because stride is 1 + padding is 1
+        self.pool5 = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)  # retains size because stride & padding are 1
 
         # Replacements for FC layers
         self.conv6 = nn.Conv2d(512, 1024, kernel_size=3, padding=6, dilation=6)  # dilated convolution
@@ -344,8 +344,8 @@ class SSD300(nn.Module):
         for k, fmap in enumerate(fmaps):
             for i in range(fmap_dims[fmap]):
                 for j in range(fmap_dims[fmap]):
-                    cx = (j + 0.5) / fmap_dims[fmap]
-                    cy = (i + 0.5) / fmap_dims[fmap]
+                    cx = (j + 0.5) / fmap_dims[fmap]  # center x of the box for the current feature map
+                    cy = (i + 0.5) / fmap_dims[fmap]  # center y of the box for the current feature map
 
                     for ratio in aspect_ratios[fmap]:
                         prior_boxes.append([cx, cy, obj_scales[fmap] * sqrt(ratio), obj_scales[fmap] / sqrt(ratio)])
@@ -496,7 +496,8 @@ class MultiBoxLoss(nn.Module):
         """
         # Compute the loss for classification
         # Find the number of positive and negative examples
-        batch_size, n_priors = predicted_locs.size(0), self.priors_cxcy.size(0)
+        batch_size = predicted_locs.size(0)
+        n_priors = self.priors_cxcy.size(0)
         n_classes = predicted_scores.size(2)
 
         assert n_priors == predicted_locs.size(1) == predicted_scores.size(1)
@@ -505,7 +506,7 @@ class MultiBoxLoss(nn.Module):
         true_classes = torch.zeros((batch_size, n_priors), dtype=torch.long).to(device)  # (batch_size, 8732)
 
         for i in range(batch_size):
-            n_objects = boxes[i].size(0)
+            n_objects = boxes[i].size(0)  # boxes[i] = (n_objects, 4)
             overlap = find_jaccard_overlap(boxes[i], self.priors_xy)  # (n_objects, 8732)
 
             # For each prior, find the object that has the maximum overlap
@@ -516,9 +517,7 @@ class MultiBoxLoss(nn.Module):
             # 2. All priors with the object may be assigned as background based on the threshold (0.5).
 
             # We therefore assign the object to the prior with the highest overlap, and assign the prior to the object.
-            _, prior_for_each_object = overlap.max(
-                dim=1  # (n_objects) - the prior with the highest overlap for each object
-            )
+            _, prior_for_each_object = overlap.max(dim=1)  # (n_objects)
 
             # We now have a 1:1 mapping between objects and priors, and can assign the priors to the objects.
             object_for_each_prior[prior_for_each_object] = torch.LongTensor(range(n_objects)).to(device)
@@ -534,7 +533,8 @@ class MultiBoxLoss(nn.Module):
 
             # Find the regression targets for each prior
             true_locs[i] = cxcy_to_gcxgcy(
-                xy_to_cxcy(boxes[i][object_for_each_prior]),  self.priors_cxcy  # (8732, 4)
+                xy_to_cxcy(boxes[i][object_for_each_prior]),  # (8732, 4)
+                self.priors_cxcy  # (8732, 4)
             )
 
         # Identify priors that are positive (object/non-background)
