@@ -309,18 +309,6 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def clip_gradient(optimizer: torch.optim.Optimizer, grad_clip: float) -> None:
-    """
-    Clips gradients computed during backpropagation to avoid explosion of gradients.
-    :param optimizer: optimizer with the gradients to be clipped
-    :param grad_clip: value
-    """
-    for group in optimizer.param_groups:
-        for param in group['params']:
-            if param.grad is not None:
-                param.grad.data.clamp_(-grad_clip, grad_clip)
-
-
 if __name__ == '__main__':
     VOC07_PATH = r'D:\ObjectDetection\PascalVOC\2007\VOCdevkit\VOC2007'
     VOC12_PATH = r'D:\ObjectDetection\PascalVOC\2012\VOCdevkit\VOC2012'

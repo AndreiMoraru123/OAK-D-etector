@@ -116,8 +116,10 @@ def random_crop(image, boxes, labels, difficulties):
             crop = torch.FloatTensor([left, top, right, bottom])  # (4)
 
             # Calculate Jaccard overlap between the crop and the bounding boxes
-            overlap = find_jaccard_overlap(crop.unsqueeze(0),
-                                           boxes)  # (1, n_objects), n_objects is the no. of objects in this image
+            overlap = find_jaccard_overlap(crop.unsqueeze(0),  # (1, 4)
+                                           boxes  # (n_objects, 4)
+                                           )  # -> (1, n_objects)
+
             overlap = overlap.squeeze(0)  # (n_objects)
 
             # If not a single bounding box has a Jaccard overlap of greater than the minimum, try again
@@ -131,8 +133,8 @@ def random_crop(image, boxes, labels, difficulties):
             bb_centers = (boxes[:, :2] + boxes[:, 2:]) / 2.  # (n_objects, 2)
 
             # Find bounding boxes whose centers are in the crop
-            centers_in_crop = (bb_centers[:, 0] > left) * (bb_centers[:, 0] < right) * (bb_centers[:, 1] > top) * (
-                    bb_centers[:, 1] < bottom)  # (n_objects), a Torch uInt8/Byte tensor, can be used as a boolean index
+            centers_in_crop = (bb_centers[:, 0] > left) * (bb_centers[:, 0] < right) * (bb_centers[:, 1] > top) *\
+                              (bb_centers[:, 1] < bottom)  # (n_objects), a boolean Tensor that can be used for indexing
 
             # If not a single bounding box has its center in the crop, try again
             if not centers_in_crop.any():

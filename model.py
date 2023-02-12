@@ -550,10 +550,10 @@ class MultiBoxLoss(nn.Module):
         # take the hardest (neg_pos_ration * n_positives) negative priors
 
         # First, find the number of positive and negative priors for each image in the batch
-        n_positives = positive_priors.sum(dim=1)  # (batch_size)
-        n_hard_negatives = self.neg_pos_ratio * n_positives  # (batch_size)
+        n_positives = positive_priors.sum(dim=1)  # (batch_size) () scalar
+        n_hard_negatives = self.neg_pos_ratio * n_positives  # (batch_size) () scalar
 
-        # Next, find the loss for all priors
+        # Next, find the loss for ALL priors
         classification_loss = self.cross_entropy_loss(
             predicted_scores.view(-1, n_classes),  # (batch_size * 8732, n_classes)
             true_classes.view(-1)  # (batch_size * 8732)

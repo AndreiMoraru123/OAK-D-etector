@@ -167,9 +167,13 @@ def run(pipeline, model):
                 # Retrieve 'bgr' (opencv format) frame
                 frame = in_rgb.getCvFrame()
 
+            if in_nn is not None:
+                print(in_nn.getLayerFp16('boxes'))
+                print(in_nn.getLayerFp16('scores'))
+
             if frame is not None:
-                box_locations, text_locations, text_box_locations, det_labels = detect(model, frame, min_score=0.8,
-                                                                                       max_overlap=0.7, top_k=200)
+                box_locations, text_locations, text_box_locations, det_labels = detect(model, frame, min_score=0.7,
+                                                                                       max_overlap=0.5, top_k=200)
 
                 # Draw the bounding boxes on the frame
                 for i in range(len(box_locations)):

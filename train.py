@@ -22,10 +22,10 @@ batch_size: int = 25  # batch size
 iterations: int = 120000  # number of iterations to train
 workers: int = 0  # number of workers for loading data in the DataLoader
 print_freq: int = 100  # print training status every __ batches
-lr: float = 1e-3  # learning rate
+lr: float = 1e-4  # learning rate
 decay_lr_at: [int] = [80000, 100000]  # decay learning rate after these many iterations
 decay_lr_to: float = 0.1  # decay learning rate to this fraction of the existing learning rate
-momentum: float = 0.9  # momentum
+momentum: float = 0.99  # momentum
 weight_decay: float = 5e-4  # weight decay
 grad_clip: float = 0.0  # clip if gradients are exploding
 
@@ -117,7 +117,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
         # Clip gradients, if necessary
         if grad_clip != 0.0:
-            clip_gradient(optimizer, grad_clip)
+            torch.nn.utils.clip_grad_value_(model.parameters(), grad_clip)
 
         # Update model
         optimizer.step()
