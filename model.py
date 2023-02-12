@@ -422,7 +422,7 @@ class SSD300(nn.Module):
 
                     # Suppress boxes whose IoU is greater than 'max_overlap'
                     # Find such boxs and update the suppression vector
-                    supress = supress | (overlap[box] > max_overlap).squeeze()
+                    supress = supress | (overlap[box] > max_overlap)
 
                     # Don't suppress this box, even though it has an IoU of 'max_overlap' with itself
                     supress[box] = 0
