@@ -1,66 +1,164 @@
-import numpy as np
-import onnx
-import blobconverter
 import cv2
-import depthai
-from onnxsim import simplify
-from utils import *
+import depthai as dai
+import argparse
 from PIL import Image
-from pathlib import Path
 from torchvision import transforms
+from detect import detect_objects, model
+from utils import *
+from openvino.inference_engine import IECore
+from openvino.runtime import Core
 from cv2 import cuda
+from model import SSD300
 
 cuda.setDevice(0)
+runtime = Core()
+devices = runtime.available_devices
 
-resize = transforms.Resize((300, 300))
-to_tensor = transforms.ToTensor()
-normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+for device in devices:
+    device_name = runtime.get_property(device, "FULL_DEVICE_NAME")
+    print(f"{device}: {device_name}")
 
 
-def detect(model, original_image, min_score, max_overlap, top_k, suppress=None):
+def generate_engine(new_model: str, device: str) -> IECore:
     """
-    Detect objects in an image with a trained SSD300, and visualize the results.
-    :param model: SSD300, the neural network
-    :param original_image: image, a PIL Image
+    Deploy model from ONNX to OpenVINO
+    :param device: the device to deploy the model, such as 'CPU', 'GPU' or 'MYRIAD'
+    :param new_model: the name of the ONNX model, such as 'ssd300'
+    :return:
+    """
+
+    # Read model from ONNX
+    ie = IECore()
+    net = ie.read_network(model=new_model+'-sim'+'.onnx')
+
+    # Load model to the device
+    exec_net = ie.load_network(network=net, device_name=device)
+
+    # Save model to IR
+    exec_net.export(new_model+'-'+device+'.xml')
+
+    return exec_net
+
+
+def configure(is_blob: bool = False, blob_path: str = None) -> dai.Pipeline:
+    """
+    Configure the pipeline
+    :param blob_path: the path to the blob model, such as 'models/ssd300.blob'
+    :param is_blob: True if the model is a blob, False if the model is an ONNX
+    :return: DepthAI pipeline
+    """
+
+    # Start defining a pipeline
+    pipeline = dai.Pipeline()
+
+    # Define sources and outputs
+    cam_rgb = pipeline.createColorCamera()
+    xout_rgb = pipeline.createXLinkOut()
+
+    # Properties
+    cam_rgb.setPreviewSize(1000, 500)
+    cam_rgb.setInterleaved(False)
+    cam_rgb.setFps(35)
+
+    # Linking
+    xout_rgb.setStreamName("rgb")
+    cam_rgb.preview.link(xout_rgb.input)
+
+    if is_blob:
+        nn = pipeline.createNeuralNetwork()
+        xout_nn = pipeline.createXLinkOut()
+        xout_nn.setStreamName("nn")
+        nn.out.link(xout_nn.input)
+
+        nn.setBlobPath(blob_path)
+        nn.setNumInferenceThreads(2)
+        nn.input.setBlocking(False)
+        nn.setNumPoolFrames(4)
+
+        cam_rgb.preview.link(nn.input)
+
+    return pipeline
+
+
+def detect(net, frame, min_score, max_overlap, top_k, suppress=None) -> tuple:
+    """
+    Detect objects in a frame
+    :param net: the neural network, either a blob, an OpenVINO model or a PyTorch model
+    :param frame: the frame to detect objects in on the Luxonis camera
     :param min_score: minimum threshold for a detected box to be considered a match for a certain class
     :param max_overlap: maximum overlap two boxes can have so that the one with the lower score is not suppressed via
      Non-Maximum Suppression (NMS)
     :param top_k: if there are a lot of resulting detection across all classes, keep only the top 'k'
-    :param suppress: classes that you know for sure cannot be in the image, or you do not want in the image, a list
-    :return: annotated image, a PIL Image
+    :param suppress: classes that you know for sure cannot be in the image, or you do not want in the image
+    :return: box_locations, text_locations, text_box_locations, det_labels
     """
-    original_image = Image.fromarray(original_image)
+
+    # Define transforms
+    resize = transforms.Resize((300, 300))
+    to_tensor = transforms.ToTensor()
+    normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+
+    # Convert to PIL Image
+    original_image = Image.fromarray(frame)
 
     # Transform
     image = normalize(to_tensor(resize(original_image)))
 
-    # Move to default device
-    image = image.to('cuda')
+    det_boxes, det_labels, det_scores = None, None, None
 
-    # Forward prop.
-    predicted_locs, predicted_scores = model(image.unsqueeze(0))
+    # If net is a blob, use the blob model
+    if isinstance(net, dai.NNData):
+        pass
 
-    # Detect objects in SSD output
-    det_boxes, det_labels, det_scores = model.detect_objects(predicted_locs, predicted_scores, min_score=min_score,
-                                                             max_overlap=max_overlap, top_k=top_k)
+    # If net is an IECore, use the OpenVINO model
+    elif isinstance(net, IECore):
 
-    # Move detections to the CPU
-    det_boxes = det_boxes[0].to('cpu')
+        # Run inference
+        res = net.infer(inputs={'input': frame})
+
+        # Get the results
+        predicted_locs = torch.from_numpy(res['boxes']).to('cuda')
+        predicted_scores = torch.from_numpy(res['scores']).to('cuda')
+
+        det_boxes, det_labels, det_scores = detect_objects(predicted_locs, predicted_scores,
+                                                           max_overlap=max_overlap,
+                                                           min_score=min_score,
+                                                           top_k=top_k)
+
+    # If net is pytorch checkpoint, use the PyTorch model
+    elif isinstance(net, SSD300):
+
+        # Move to default device
+        net = net.to('cuda')
+        image = image.to('cuda')
+
+        # Forward prop.
+        predicted_locs, predicted_scores = net(image.unsqueeze(0))
+
+        # Detect objects in SSD output
+        det_boxes, det_labels, det_scores = detect_objects(predicted_locs, predicted_scores,
+                                                           max_overlap=max_overlap,
+                                                           min_score=min_score,
+                                                           top_k=top_k)
+
+    else:
+        raise ValueError('The net must be either a blob, an OpenVINO model or a PyTorch model')
+
+    # Move detections to CUDA
+    det_boxes = det_boxes[0].to('cuda')
 
     # Transform to original image dimensions
-    original_dims = torch.FloatTensor(
-        [original_image.width, original_image.height, original_image.width, original_image.height]
-    ).unsqueeze(0)
+    original_dims = torch.FloatTensor([original_image.width, original_image.height,
+                                       original_image.width, original_image.height]).unsqueeze(0).to('cuda')
 
     det_boxes = det_boxes * original_dims  # scale to original dimensions
 
     # Decode class integer labels
-    det_labels = [rev_label_map[l] for l in det_labels[0].to('cpu').tolist()]
+    det_labels = [rev_label_map[l] for l in det_labels[0].to('cuda').tolist()]
 
     # If no objects found, the detection pipeline has failed
     if det_boxes is None:
         print('No objects found!')
-        return original_image
 
     box_locations, text_locations, text_box_locations = [], [], []
 
@@ -90,90 +188,35 @@ def detect(model, original_image, min_score, max_overlap, top_k, suppress=None):
     return box_locations, text_locations, text_box_locations, det_labels
 
 
-def configure():
+def run(pipeline, is_blob: bool = False, net=None):
+    """
+    Run the pipeline
+    :param pipeline: DepthAI pipeline
+    :param is_blob: True if the model is a blob, False if the model is an ONNX
+    :param net: the model to use for inference
+    :return:
+    """
+    # Connect to device and start pipeline
+    with dai.Device(pipeline) as device:
+        # Output queue will be used to get the rgb frames from the output defined above
+        q_rgb = device.getOutputQueue(name="rgb", maxSize=4, blocking=False)
+        if is_blob:
+            q_nn = device.getOutputQueue(name="nn", maxSize=4, blocking=False)
 
-    # Load model checkpoint
-    checkpoint = torch.load('checkpoints/checkpoint_ssd300.pt', map_location='cuda')
-    model = checkpoint['model']
-    model.eval()
-
-    # Export the model
-    dummy_input = torch.randn(1, 3, 300, 300, device='cuda')
-    torch.onnx.export(model, dummy_input, "ssd300.onnx", verbose=False)
-
-    # Simplify the model
-    model_simp, check = simplify('ssd300.onnx')
-    assert check, "Simplified ONNX model could not be validated"
-    onnx.save(model_simp, 'ssd300-sim.onnx')
-
-    # Convert the model to blob
-    blobconverter.from_onnx(model='ssd300-sim.onnx', output_dir='ssd300-sim.blob',
-                            shaves=6, use_cache=True, data_type='FP16')
-
-    # Create pipeline
-    pipeline = depthai.Pipeline()
-
-    # Define sources and outputs
-    cam_rgb = pipeline.createColorCamera()
-    nn = pipeline.createNeuralNetwork()
-    xout_rgb = pipeline.createXLinkOut()
-    xout_nn = pipeline.createXLinkOut()
-
-    # Properties
-    # cam_rgb.setVideoSize(300, 300)
-    cam_rgb.setPreviewSize(1000, 500)
-    cam_rgb.setInterleaved(False)
-    cam_rgb.setFps(35)
-
-    # Linking
-    xout_rgb.setStreamName("rgb")
-    xout_nn.setStreamName("nn")
-    cam_rgb.preview.link(xout_rgb.input)
-    nn.out.link(xout_nn.input)
-
-    # Load model
-    nn.setBlobPath(Path('ssd300-sim.blob/ssd300-sim_openvino_2021.4_6shave.blob'))
-    nn.setNumInferenceThreads(2)
-    nn.input.setBlocking(False)
-    nn.setNumPoolFrames(4)
-
-    # cam_rgb.video.link(nn.input)
-    # cam_rgb.preview.link(nn.input)
-
-    return pipeline, model
-
-
-def run(pipeline, model):
-    # Pipeline is now finished, and we need to find an available device to run our pipeline
-    # we are using context manager here that will dispose the device after we stop using it
-    with depthai.Device(pipeline) as device:
-        # From this point, the Device will be in "running" mode and will start sending data via XLink
-
-        # To consume the device results, we get two output queues from the device, with stream names we assigned earlier
-        q_rgb = device.getOutputQueue("rgb", maxSize=4, blocking=False)
-        q_nn = device.getOutputQueue("nn", maxSize=4, blocking=False)
-
-        # Here, some default values are defined. Frame will be an image from "rgb" stream,
         frame = None
 
-        # Main loop
         while True:
-            # Instead of get (blocking), we use tryGet (nonblocking)
-            # which will return the available data or None otherwise
             in_rgb = q_rgb.tryGet()
-            in_nn = q_nn.tryGet()
+
+            if is_blob:
+                in_nn = q_nn.tryGet()
 
             if in_rgb is not None:
-                # Retrieve 'bgr' (opencv format) frame
                 frame = in_rgb.getCvFrame()
 
-            if in_nn is not None:
-                print(in_nn.getLayerFp16('boxes'))
-                print(in_nn.getLayerFp16('scores'))
-
             if frame is not None:
-                box_locations, text_locations, text_box_locations, det_labels = detect(model, frame, min_score=0.7,
-                                                                                       max_overlap=0.5, top_k=200)
+                box_locations, text_locations, text_box_locations, det_labels = detect(net, frame, min_score=0.7,
+                                                                                       max_overlap=0.5, top_k=20)
 
                 # Draw the bounding boxes on the frame
                 for i in range(len(box_locations)):
@@ -192,12 +235,37 @@ def run(pipeline, model):
 
                 # Show the frame
                 cv2.imshow("rgb", frame)
+
                 if cv2.waitKey(1) == ord('q'):
                     break
 
-    # The device is disposed automatically when exiting the 'with' statement
+
+def choose_hardware():
+    """
+    Choose the hardware to run the model on
+    :return: the hardware to run the model on
+    """
+    hardware = input("Choose the hardware to run the model on (MYRIAD or GPU): ")
+
+    switcher = {
+        "MYRIAD": generate_engine(args.new_model, args.device),
+        "GPU": model
+    }
+
+    return switcher.get(hardware, "Invalid hardware")
 
 
 if __name__ == '__main__':
-    pipeline, model = configure()
-    run(pipeline, model)
+    parser = argparse.ArgumentParser(description='Run a PyTorch model on DepthAI')
+    parser.add_argument('--is_blob', action='store_true', default=False, help='If the model is a blob')
+    parser.add_argument('--blob_path', type=str, default=None, help='Path to the blob file')
+    parser.add_argument('--device', type=str, default="MYRIAD", help='the device to deploy the model')
+    parser.add_argument('--new_model', default="ssd300", type=str, help='the name of the ONNX model')
+
+    args = parser.parse_args()
+
+    neural_network = choose_hardware()
+
+    # Create pipeline
+    pipeline = configure(args.is_blob, args.blob_path)
+    run(pipeline, args.is_blob, neural_network)
