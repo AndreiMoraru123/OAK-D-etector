@@ -1,7 +1,7 @@
 # Object Detection
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/81184255/218573203-abf5ec96-e393-45a0-8742-ca80b6ea51c7.jpg" width="800"/>
+  <img src="https://user-images.githubusercontent.com/81184255/218573203-abf5ec96-e393-45a0-8742-ca80b6ea51c7.jpg" width="600"/>
 </p>
 
 ## Work in progress
