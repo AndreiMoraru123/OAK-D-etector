@@ -1,6 +1,8 @@
 import cv2
 import depthai as dai
 import argparse
+
+import numpy as np
 import openvino.inference_engine.ie_api as api
 from PIL import Image
 from pathlib import Path
@@ -21,7 +23,7 @@ for device in devices:
     print(f"{device}: {device_name}")
 
 
-def generate_engine(new_model: str, device: str) -> IECore:
+def generate_engine(new_model: str, device: str) -> api.ExecutableNetwork:
     """
     Deploy model from ONNX to OpenVINO
     :param device: the device to deploy the model, such as 'CPU', 'GPU' or 'MYRIAD'
@@ -34,7 +36,7 @@ def generate_engine(new_model: str, device: str) -> IECore:
     net = ie.read_network(model=new_model+'-sim'+'.onnx')
 
     # Load model to the device
-    exec_net = ie.load_network(network=net, device_name=device)
+    exec_net = ie.load_network(network=net, device_name=device, num_requests=2)
 
     # Save model to IR
     exec_net.export(new_model+'-'+device+'.xml')
@@ -115,17 +117,54 @@ def detect(net, frame, min_score, max_overlap, top_k, suppress=None) -> tuple:
     # If net is an IECore, use the OpenVINO model
     elif isinstance(net, api.ExecutableNetwork):
 
-        # Run inference
-        res = net.infer(inputs={'input': image.unsqueeze(0).numpy()})
+        # Start the first inference request asynchronously
+        infer_request_handle1 = net.start_async(request_id=0, inputs={'input': image.unsqueeze(0).numpy()})
 
-        # Get the results
-        predicted_locs = torch.from_numpy(res['boxes']).to('cuda')
-        predicted_scores = torch.from_numpy(res['scores']).to('cuda')
+        # Start the second inference request asynchronously
+        infer_request_handle2 = net.start_async(request_id=1, inputs={'input': image.unsqueeze(0).numpy()})
 
-        det_boxes, det_labels, det_scores = detect_objects(predicted_locs, predicted_scores,
-                                                           max_overlap=max_overlap,
-                                                           min_score=min_score,
-                                                           top_k=top_k)
+        if infer_request_handle1.wait() == 0:
+            # Get the results
+            predicted_locs = np.array(infer_request_handle1.output_blobs['boxes'].buffer, dtype=np.float32)
+            predicted_scores = np.array(infer_request_handle1.output_blobs['scores'].buffer, dtype=np.float32)
+
+            # Send the results as tensors to the GPU
+            predicted_locs = torch.from_numpy(predicted_locs).to('cuda')
+            predicted_scores = torch.from_numpy(predicted_scores).to('cuda')
+
+            # Detect objects
+            det_boxes, det_labels, det_scores = detect_objects(predicted_locs, predicted_scores,
+                                                               max_overlap=max_overlap,
+                                                               min_score=min_score,
+                                                               top_k=top_k)
+
+        if infer_request_handle2.wait() == 0:
+            # Get the results
+            predicted_locs = np.array(infer_request_handle2.output_blobs['boxes'].buffer, dtype=np.float32)
+            predicted_scores = np.array(infer_request_handle2.output_blobs['scores'].buffer, dtype=np.float32)
+
+            # Send the results as tensors to the GPU
+            predicted_locs = torch.from_numpy(predicted_locs).to('cuda')
+            predicted_scores = torch.from_numpy(predicted_scores).to('cuda')
+
+            # Detect objects
+            det_boxes, det_labels, det_scores = detect_objects(predicted_locs, predicted_scores,
+                                                               max_overlap=max_overlap,
+                                                               min_score=min_score,
+                                                               top_k=top_k)
+
+
+        # # Run inference
+        # res = net.infer(inputs={'input': image.unsqueeze(0).numpy()})
+        #
+        # # Get the results
+        # predicted_locs = torch.from_numpy(res['boxes']).to('cuda')
+        # predicted_scores = torch.from_numpy(res['scores']).to('cuda')
+        #
+        # det_boxes, det_labels, det_scores = detect_objects(predicted_locs, predicted_scores,
+        #                                                    max_overlap=max_overlap,
+        #                                                    min_score=min_score,
+        #                                                    top_k=top_k)
 
     # If net is pytorch checkpoint, use the PyTorch model
     elif isinstance(net, SSD300):
