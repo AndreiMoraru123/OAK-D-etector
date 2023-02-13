@@ -1,4 +1,4 @@
-# Object Detection
+# SSD Object Detection on OAK-D Lite
 
 
 <table>
