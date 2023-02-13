@@ -1,4 +1,4 @@
-# SSD Object Detection on OAK-D Lite
+# SSD Object Detection on OAK-D Lite via DepthAI & OpenVINO
 
 
 <table>
