@@ -1,7 +1,9 @@
 import cv2
 import depthai as dai
 import argparse
+import openvino.inference_engine.ie_api as api
 from PIL import Image
+from pathlib import Path
 from torchvision import transforms
 from detect import detect_objects, model
 from utils import *
@@ -70,7 +72,7 @@ def configure(is_blob: bool = False, blob_path: str = None) -> dai.Pipeline:
         xout_nn.setStreamName("nn")
         nn.out.link(xout_nn.input)
 
-        nn.setBlobPath(blob_path)
+        nn.setBlobPath(Path(blob_path))
         nn.setNumInferenceThreads(2)
         nn.input.setBlocking(False)
         nn.setNumPoolFrames(4)
@@ -111,10 +113,10 @@ def detect(net, frame, min_score, max_overlap, top_k, suppress=None) -> tuple:
         pass
 
     # If net is an IECore, use the OpenVINO model
-    elif isinstance(net, IECore):
+    elif isinstance(net, api.ExecutableNetwork):
 
         # Run inference
-        res = net.infer(inputs={'input': frame})
+        res = net.infer(inputs={'input': image.unsqueeze(0).numpy()})
 
         # Get the results
         predicted_locs = torch.from_numpy(res['boxes']).to('cuda')
