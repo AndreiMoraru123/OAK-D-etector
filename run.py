@@ -33,13 +33,13 @@ def generate_engine(new_model: str, device: str) -> api.ExecutableNetwork:
 
     # Read model from ONNX
     ie = IECore()
-    net = ie.read_network(model=new_model+'-sim'+'.onnx')
+    net = ie.read_network(model=new_model + '-sim' + '.onnx')
 
     # Load model to the device
     exec_net = ie.load_network(network=net, device_name=device, num_requests=2)
 
     # Save model to IR
-    exec_net.export(new_model+'-'+device+'.xml')
+    exec_net.export(new_model + '-' + device + '.xml')
 
     return exec_net
 
@@ -152,19 +152,6 @@ def detect(net, frame, min_score, max_overlap, top_k, suppress=None) -> tuple:
                                                                max_overlap=max_overlap,
                                                                min_score=min_score,
                                                                top_k=top_k)
-
-
-        # # Run inference
-        # res = net.infer(inputs={'input': image.unsqueeze(0).numpy()})
-        #
-        # # Get the results
-        # predicted_locs = torch.from_numpy(res['boxes']).to('cuda')
-        # predicted_scores = torch.from_numpy(res['scores']).to('cuda')
-        #
-        # det_boxes, det_labels, det_scores = detect_objects(predicted_locs, predicted_scores,
-        #                                                    max_overlap=max_overlap,
-        #                                                    min_score=min_score,
-        #                                                    top_k=top_k)
 
     # If net is pytorch checkpoint, use the PyTorch model
     elif isinstance(net, SSD300):
