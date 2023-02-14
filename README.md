@@ -116,6 +116,32 @@ GNA: GNA_SW
 Honestly, I just had one laying around, but since it's double the fun this way, I can run the frames on the camera, and compute on the stick.
 One could use just the camera's VPU the exact same way, using OpenVINO.
 
+## Deployment
+
+See `deploy.py`
+
+In order to run the model on the OpenVINO's inference engine, I must first convert it to [`onnx`](https://onnx.ai/) (Open Neural Network eXchange) format, as PyTorch models do not have their own deployment systems, such as TensorFlow's frozen graphs. It's important here to also export input and output names, because in some cases, such as the object detector here, the forward pass my return multiple tensors:
+
+
+```python
+# Load model checkpoint
+checkpoint = torch.load(model_path, map_location='cuda')
+model = checkpoint['model']
+model.eval()
+
+# Export to ONNX
+input_names = ['input']
+output_names = ['boxes', 'scores']
+dummy_input = torch.randn(1, 3, 300, 300).to('cuda')
+torch.onnx.export(model, dummy_input, new_model+'.onnx', verbose=True,
+                  input_names=input_names, output_names=output_names)
+
+# Simplify ONNX
+simple_model, check = simplify('ssd300.onnx')
+assert check, "Simplified ONNX model could not be validated"
+onnx.save(simple_model, new_model+'-sim'+'.onnx')
+```
+
 
 ## Work in progress
 
