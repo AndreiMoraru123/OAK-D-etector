@@ -118,7 +118,7 @@ One could use just the camera's VPU the exact same way, using OpenVINO.
 
 ## Deployment
 
-See `deploy.py`
+See [deploy.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/deploy.py)
 
 In order to run the model on the OpenVINO's inference engine, I must first convert it to [`onnx`](https://onnx.ai/) (Open Neural Network eXchange) format, as PyTorch models do not have their own deployment systems, such as TensorFlow's frozen graphs. It's important here to also export input and output names, because in some cases, such as the object detector here, the forward pass my return multiple tensors:
 
