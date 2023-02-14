@@ -141,7 +141,7 @@ assert check, "Simplified ONNX model could not be validated"
 onnx.save(simple_model, new_model+'-sim'+'.onnx')
 ```
 
-After getting the model in `onnx` format, I can use OpenVINO's inference enginer to load it:
+After getting the model in `onnx` format, I can use OpenVINO's inference engine to load it:
 
 ```python
 from openvino.inference_engine import IECore
