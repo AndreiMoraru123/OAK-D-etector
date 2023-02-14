@@ -141,6 +141,10 @@ assert check, "Simplified ONNX model could not be validated"
 onnx.save(simple_model, new_model+'-sim'+'.onnx')
 ```
 
+## Running the model
+
+See [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py)
+
 After getting the model in `onnx` format, I can use OpenVINO's inference engine to load it:
 
 ```python
@@ -153,17 +157,13 @@ net = ie.read_network(model=new_model + '-sim' + '.onnx')
 exec_net = ie.load_network(network=net, device_name='MYRIAD')
 ```
 
-## Running the model
-
-See [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py)
-
 Now I can use my `exec_net` to infer on my input data:
 
 ```python
 net.infer({'input': frame.unsqueeze(0).numpy()})  # inference on the camera frame.
 ```
 
-That's it!
+And that's it!
 
 The rest of the code if configuring the [pipeline](https://docs.luxonis.com/projects/api/en/latest/components/pipeline/). You can check out this awesome guide from [pyimagesearch](https://pyimagesearch.com/2022/12/19/oak-d-understanding-and-running-neural-network-inference-with-depthai-api/) to see exactly what each link means.
 
