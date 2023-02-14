@@ -123,6 +123,7 @@ def detect(net, frame, min_score, max_overlap, top_k, suppress=None) -> tuple:
         # Start the second inference request asynchronously
         infer_request_handle2 = net.start_async(request_id=1, inputs={'input': image.unsqueeze(0).numpy()})
 
+        # Wait for the first inference request to complete
         if infer_request_handle1.wait() == 0:
             # Get the results
             predicted_locs = np.array(infer_request_handle1.output_blobs['boxes'].buffer, dtype=np.float32)
@@ -138,6 +139,7 @@ def detect(net, frame, min_score, max_overlap, top_k, suppress=None) -> tuple:
                                                                min_score=min_score,
                                                                top_k=top_k)
 
+        # Wait for the second inference request to complete
         if infer_request_handle2.wait() == 0:
             # Get the results
             predicted_locs = np.array(infer_request_handle2.output_blobs['boxes'].buffer, dtype=np.float32)
@@ -216,7 +218,7 @@ def detect(net, frame, min_score, max_overlap, top_k, suppress=None) -> tuple:
     return box_locations, text_locations, text_box_locations, det_labels
 
 
-def run(pipeline, is_blob: bool = False, net=None):
+def run(pipeline, is_blob: bool = False, net=None, min_score: float = 0.2, max_overlap: float = 0.5, top_k: int = 200):
     """
     Run the pipeline
     :param pipeline: DepthAI pipeline
@@ -243,8 +245,9 @@ def run(pipeline, is_blob: bool = False, net=None):
                 frame = in_rgb.getCvFrame()
 
             if frame is not None:
-                box_locations, text_locations, text_box_locations, det_labels = detect(net, frame, min_score=0.7,
-                                                                                       max_overlap=0.5, top_k=20)
+                box_locations, text_locations, text_box_locations, det_labels = detect(net, frame, min_score=min_score,
+                                                                                       max_overlap=max_overlap,
+                                                                                       top_k=top_k)
 
                 # Draw the bounding boxes on the frame
                 for i in range(len(box_locations)):
@@ -289,6 +292,9 @@ if __name__ == '__main__':
     parser.add_argument('--blob_path', type=str, default=None, help='Path to the blob file')
     parser.add_argument('--device', type=str, default="MYRIAD", help='the device to deploy the model')
     parser.add_argument('--new_model', default="ssd300", type=str, help='the name of the ONNX model')
+    parser.add_argument('--min_score', default=0.8, type=float, help='the minimum score for a box to be considered')
+    parser.add_argument('--max_overlap', default=0.5, type=float, help='the maximum overlap for a box to be considered')
+    parser.add_argument('--top_k', default=200, type=int, help='the maximum number of boxes to be considered')
 
     args = parser.parse_args()
 
@@ -296,4 +302,4 @@ if __name__ == '__main__':
 
     # Create pipeline
     pipeline = configure(args.is_blob, args.blob_path)
-    run(pipeline, args.is_blob, neural_network)
+    run(pipeline, args.is_blob, neural_network, args.min_score, args.max_overlap, args.top_k)
