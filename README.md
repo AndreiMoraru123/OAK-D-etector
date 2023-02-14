@@ -178,7 +178,7 @@ exec_net = ie.load_network(network=net, device_name=device, num_requests=2)
 which I can then start asynchronously:
 
 ```python
- # Start the first inference request asynchronously
+# Start the first inference request asynchronously
 infer_request_handle1 = net.start_async(request_id=0, inputs={'input': image.unsqueeze(0).numpy()})
 
 # Start the second inference request asynchronously
