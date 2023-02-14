@@ -155,6 +155,8 @@ exec_net = ie.load_network(network=net, device_name='MYRIAD')
 
 ## Running the model
 
+See [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py)
+
 Now I can use my `exec_net` to infer on my input data:
 
 ```python
