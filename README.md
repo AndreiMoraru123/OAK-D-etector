@@ -22,7 +22,7 @@
   </tr>
 </table>
 
-The original PyTorch implementation of the model, and the one that I am following here is [this one](https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Object-Detection). 
+The original PyTorch implementation of the model, and the one that I am following here, is [this one](https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Object-Detection). 
 This is a fantastic guide by itself and I did not modify much as of now. The goal for this project is to get to deploy such a custom model on real hardware, rather than neural network design.
 
 In this regard, I am using a [Luxonis OAK-D Lite](https://shop.luxonis.com/products/oak-d-lite-1) and an [Intel Neural Compute Stick 2](https://www.intel.com/content/www/us/en/developer/articles/tool/neural-compute-stick.html). Funnily enough, just as I finished this, the NCS2 became outdated, as you can see in the Intel docs, since Intel will be discontinuing it. But that besides the point here, as the main focus is deployment on specific hardware, whatever that hardware may be. 
