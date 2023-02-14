@@ -141,6 +141,8 @@ assert check, "Simplified ONNX model could not be validated"
 onnx.save(simple_model, new_model+'-sim'+'.onnx')
 ```
 
+Notice the `output_names` list. In the case of SSD, the model outputs both predicted locations (a tensor of (8731=priors, 4=coordinates) and class scores (8732=priors, 21=classes), like all object detectors. It's important to separate the two, which is easy to do with `torch.onnx.export`, but also easy to forget.
+
 ## Running the model
 
 See [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py)
