@@ -48,7 +48,8 @@ setupvars.bat
 One will get a message back saying: 
 
 ```bash
-OpenVINO environment initialized
+Python 3.7.7
+[setupvars.bat] OpenVINO environment initialized
 ```
 
 And now (and only now) can I open my Python editor from the same command prompt:
