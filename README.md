@@ -62,7 +62,6 @@ I can run the following script to make sure ensure the detection of the device(s
 ```python
 from openvino.runtime import Core
 
-
 runtime = Core()
 devices = runtime.available_devices
 
@@ -100,13 +99,17 @@ MYRIAD.6.1-ma2480: Intel Movidius Myriad X VPU
 MYRIAD.6.3-ma2480: Intel Movidius Myriad X VPU
 ```
 
-And if I connect nothing, or if I forget to instantiate my OpenVINO environment, obviously I only get this:
+And if I connect nothing, or if I forget to initialize my OpenVINO environment, obviously I only get this:
 
 ```
 [E:] [BSL] found 0 ioexpander device
 CPU: AMD Ryzen 7 4800H with Radeon Graphics         
 GNA: GNA_SW
 ```
+
+#### Question: Why use both the NCS2 and the OAK-D if the OAK-D suffices?
+#### Answer: No reason to! 
+Honestly, I just had one laying around, but since it's double the fun this way, I can run the frames on the camera, and compute on the stick.
 
 
 ## Work in progress
