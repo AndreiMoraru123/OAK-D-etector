@@ -122,7 +122,6 @@ See [deploy.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/dep
 
 In order to run the model on the OpenVINO's inference engine, I must first convert it to [`onnx`](https://onnx.ai/) (Open Neural Network eXchange) format, as PyTorch models do not have their own deployment systems, such as TensorFlow's frozen graphs. It's important here to also export input and output names, because in some cases, such as the object detector here, the forward pass my return multiple tensors:
 
-
 ```python
 # Load model checkpoint
 checkpoint = torch.load(model_path, map_location='cuda')
@@ -142,6 +141,82 @@ assert check, "Simplified ONNX model could not be validated"
 onnx.save(simple_model, new_model+'-sim'+'.onnx')
 ```
 
+After getting the model in `onnx` format, I can use OpenVINO's inference enginer to load it:
+
+```python
+from openvino.inference_engine import IECore
+
+ie = IECore()
+net = ie.read_network(model=new_model + '-sim' + '.onnx')
+
+# Load model to the device
+exec_net = ie.load_network(network=net, device_name='MYRIAD')
+```
+
+## Running the model
+
+Now I can use my `exec_net` to infer on my input data:
+
+```python
+net.infer({'input': frame.unsqueeze(0).numpy()})  # inference on the camera frame.
+```
+
+That's it!
+
+The rest of the code if configuring the [pipeline](https://docs.luxonis.com/projects/api/en/latest/components/pipeline/). You can check out this awesome guide from [pyimagesearch](https://pyimagesearch.com/2022/12/19/oak-d-understanding-and-running-neural-network-inference-with-depthai-api/) to see exactly what each link means.
+
+## Parallelization
+
+OpenVINO has this cool feature where I can infer on multiple threads. In order to do this, I only have to change the loading to accomodate multiple requests:
+
+```python
+exec_net = ie.load_network(network=net, device_name=device, num_requests=2)
+```
+
+which I can then start asynchronously:
+
+```python
+ # Start the first inference request asynchronously
+infer_request_handle1 = net.start_async(request_id=0, inputs={'input': image.unsqueeze(0).numpy()})
+
+# Start the second inference request asynchronously
+infer_request_handle2 = net.start_async(request_id=1, inputs={'input': image.unsqueeze(0).numpy()})
+
+# Wait for the first inference request to complete
+if infer_request_handle1.wait() == 0:
+    # Get the results
+    predicted_locs = np.array(infer_request_handle1.output_blobs['boxes'].buffer, dtype=np.float32)
+    predicted_scores = np.array(infer_request_handle1.output_blobs['scores'].buffer, dtype=np.float32)
+
+    # Send the results as tensors to the GPU
+    predicted_locs = torch.from_numpy(predicted_locs).to('cuda')
+    predicted_scores = torch.from_numpy(predicted_scores).to('cuda')
+
+    # Detect objects
+    det_boxes, det_labels, det_scores = detect_objects(predicted_locs, predicted_scores,
+                                                       max_overlap=max_overlap,
+                                                       min_score=min_score,
+                                                       top_k=top_k)
+
+# Wait for the second inference request to complete
+if infer_request_handle2.wait() == 0:
+    # Get the results
+    predicted_locs = np.array(infer_request_handle2.output_blobs['boxes'].buffer, dtype=np.float32)
+    predicted_scores = np.array(infer_request_handle2.output_blobs['scores'].buffer, dtype=np.float32)
+
+    # Send the results as tensors to the GPU
+    predicted_locs = torch.from_numpy(predicted_locs).to('cuda')
+    predicted_scores = torch.from_numpy(predicted_scores).to('cuda')
+
+    # Detect objects
+    det_boxes, det_labels, det_scores = detect_objects(predicted_locs, predicted_scores,
+                                                       max_overlap=max_overlap,
+                                                       min_score=min_score,
+                                                       top_k=top_k)
+
+```
+
+## Demo
 
 ## Work in progress
 
