@@ -221,6 +221,9 @@ def detect(net, frame, min_score, max_overlap, top_k, suppress=None) -> tuple:
 def run(pipeline, is_blob: bool = False, net=None, min_score: float = 0.2, max_overlap: float = 0.5, top_k: int = 200):
     """
     Run the pipeline
+    :param min_score: minimum threshold for a detected box to be considered a match for a certain class
+    :param max_overlap: maximum overlap two boxes can have so that NMS is not applied to the smaller box
+    :param top_k: if there are a lot of resulting detection across all classes, keep only the top 'k'
     :param pipeline: DepthAI pipeline
     :param is_blob: True if the model is a blob, False if the model is an ONNX
     :param net: the model to use for inference
@@ -279,7 +282,7 @@ def choose_hardware(hardware: str) -> object:
 
     switcher = {
         "MYRIAD": generate_engine(args.new_model, args.device),
-        "GPU": model
+        "CUDA": model
     }
 
     return switcher.get(hardware, "Invalid hardware")
@@ -287,15 +290,15 @@ def choose_hardware(hardware: str) -> object:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a PyTorch model on DepthAI')
-    parser.add_argument('-usbs', type=str, default='usb2', help='the USB connection (usb2 or usb3)')
+    parser.add_argument('-usbs', type=str, default='usb2 usb3', help='the USB connection (usb2 or usb3)')
     parser.add_argument('--is_blob', action='store_true', default=False, help='If the model is a blob')
     parser.add_argument('--blob_path', type=str, default=None, help='Path to the blob file')
-    parser.add_argument('--device', type=str, default="MYRIAD", help='the device to deploy the model')
+    parser.add_argument('--device', type=str, default="MYRIAD", help='the device to generate the engine for')
     parser.add_argument('--new_model', default="ssd300", type=str, help='the name of the ONNX model')
     parser.add_argument('--min_score', default=0.8, type=float, help='the minimum score for a box to be considered')
     parser.add_argument('--max_overlap', default=0.5, type=float, help='the maximum overlap for a box to be considered')
     parser.add_argument('--top_k', default=200, type=int, help='the maximum number of boxes to be considered')
-    parser.add_argument('--hardware', type=str, default="MYRIAD", help='the hardware to run the model on')
+    parser.add_argument('--hardware', type=str, default="CUDA", help='the hardware to run the model on')
 
     args = parser.parse_args()
 
