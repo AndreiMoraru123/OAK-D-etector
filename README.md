@@ -29,6 +29,8 @@ In this regard, I am using a [Luxonis OAK-D Lite](https://shop.luxonis.com/produ
 
 Namely, we are looking at VPU's, or [vision processing units](https://en.wikipedia.org/wiki/Vision_processing_unit). One such AI accelerator is found in the OAK-D camera itself! 
 
+## Setup 
+
 In order to communicate with the hardware, I am using both [DepthAI's api](https://docs.luxonis.com/en/latest/) to communicate with the RGB camera of the OAK-D, and Intel's [OpenVINO](https://docs.openvino.ai/latest/home.html) (Open Visual Inference and Neural Optimization) for deployment, both of which are still very much state of the art in Edge AI.
 
 Now, in order to use OpenVINO with hardware, one has to [download the distribution toolkit](https://docs.openvino.ai/2021.1/openvino_docs_install_guides_installing_openvino_windows.html). For compiling and running apps, the library prefers to set up temporary variables, so we will do it that way. For me, the path looks like this:
@@ -56,6 +58,8 @@ pycharm
 ```
 
 Otherwise, the hardware will not be recognized.
+
+## Hardware
 
 I can run the following script to make sure ensure the detection of the device(s):
 
@@ -110,6 +114,7 @@ GNA: GNA_SW
 #### Question: Why use both the NCS2 and the OAK-D if the OAK-D suffices?
 #### Answer: No reason to! 
 Honestly, I just had one laying around, but since it's double the fun this way, I can run the frames on the camera, and compute on the stick.
+One could use just the camera's VPU the exact same way, using OpenVINO.
 
 
 ## Work in progress
