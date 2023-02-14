@@ -271,12 +271,11 @@ def run(pipeline, is_blob: bool = False, net=None, min_score: float = 0.2, max_o
                     break
 
 
-def choose_hardware():
+def choose_hardware(hardware: str) -> object:
     """
     Choose the hardware to run the model on
     :return: the hardware to run the model on
     """
-    hardware = input("Choose the hardware to run the model on (MYRIAD or GPU): ")
 
     switcher = {
         "MYRIAD": generate_engine(args.new_model, args.device),
@@ -288,6 +287,7 @@ def choose_hardware():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a PyTorch model on DepthAI')
+    parser.add_argument('-usbs', type=str, default='usb2', help='the USB connection (usb2 or usb3)')
     parser.add_argument('--is_blob', action='store_true', default=False, help='If the model is a blob')
     parser.add_argument('--blob_path', type=str, default=None, help='Path to the blob file')
     parser.add_argument('--device', type=str, default="MYRIAD", help='the device to deploy the model')
@@ -295,10 +295,11 @@ if __name__ == '__main__':
     parser.add_argument('--min_score', default=0.8, type=float, help='the minimum score for a box to be considered')
     parser.add_argument('--max_overlap', default=0.5, type=float, help='the maximum overlap for a box to be considered')
     parser.add_argument('--top_k', default=200, type=int, help='the maximum number of boxes to be considered')
+    parser.add_argument('--hardware', type=str, default="MYRIAD", help='the hardware to run the model on')
 
     args = parser.parse_args()
 
-    neural_network = choose_hardware()
+    neural_network = choose_hardware(args.hardware)
 
     # Create pipeline
     pipeline = configure(args.is_blob, args.blob_path)
