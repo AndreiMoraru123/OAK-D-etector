@@ -31,7 +31,7 @@ Namely, we are looking at VPU's, or [vision processing units](https://en.wikiped
 
 One such AI accelerator can be found in the [OAK-D camera](https://github.com/luxonis/depthai-hardware/blob/master/DM9095_OAK-D-LITE_DepthAI_USB3C/Datasheet/OAK-D-Lite_Datasheet.pdf) itself! 
 
-## Setup 
+# Setup 
 
 In order to communicate with the hardware, I am using both [DepthAI's api](https://docs.luxonis.com/en/latest/) to communicate with the RGB camera of the OAK-D, and Intel's [OpenVINO](https://docs.openvino.ai/latest/home.html) (Open Visual Inference and Neural Optimization) for deployment, both of which are still very much state of the art in Edge AI.
 
@@ -64,7 +64,7 @@ pycharm
 
 Otherwise, the hardware will not be recognized.
 
-## Hardware
+# Hardware
 
 I can run the following script to make sure ensure the detection of the device(s):
 
@@ -121,7 +121,7 @@ GNA: GNA_SW
 Honestly, I just had one laying around, but since it's double the fun this way, I can run the frames on the camera, and compute on the stick.
 I could use just the camera's VPU the exact same way, using OpenVINO.
 
-## Deployment
+# Deployment
 
 See [deploy.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/deploy.py)
 
@@ -148,11 +148,11 @@ onnx.save(simple_model, new_model+'-sim'+'.onnx')
 
 Notice the `output_names` list given as a parameter. In the case of SSD, the model outputs both predicted locations (8731=priors, 4=coordinates) and class scores (8732=priors, 21=classes), like all object detectors. It's important to separate the two, which is easy to do with `torch.onnx.export`, but also easy to forget.
 
-## Running the model
+# Running the model
 
 See [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py)
 
-#### There are three options for inference hardware, and I will go through all of them:
+### There are three options for inference hardware, and I will go through all of them:
 
 ```python
 switcher = {
@@ -162,11 +162,11 @@ switcher = {
 }
 ```
 
-### Running on CUDA via checkpoint
+## Running on CUDA via checkpoint
 
 This is straightforward, and not very interesting here. Since the tensors are already on CUDA, I can just load the `checkpoint` in PyTorch and run the model using the forward call. I did put this option in here since it's the fastest, and best for showing demos. I could have also included `CPU` as an option that would have the same flow in the code, but why would anyone want that? Ha.
 
-### Running on the NCS2/camera via OpenVINO's inference engine
+## Running on the NCS2/camera via OpenVINO's inference engine
 
 After getting the model in `onnx` format, I can use OpenVINO's inference engine to load it:
 
@@ -211,7 +211,7 @@ cam_rgb.preview.link(xout_rgb.input)
 > **Note**
 > I deliberately do not create a DepthAI Neural Network node here, because I am running the inference via the OpenVINO ExecutableNetwork.
 
-#### Parallelization & Ouputs
+### Parallelization & Ouputs
 
 OpenVINO has this cool feature where I can infer on multiple threads. In order to do this, I only have to change the loading to accomodate multiple requests:
 
@@ -262,7 +262,7 @@ if infer_request_handle2.wait() == 0:
 
 ```
 
-### Running on the OAK-D using `blob` format
+## Running on the OAK-D using `blob` format
 
 I can skip OpenVINO completely and work with the neural network as a binary object.
 
@@ -329,7 +329,6 @@ predicted_scores = predicted_scores.unsqueeze(0)
 
 Which, after a bit of tensor engineering, can be used for detecting the objects (see `detect_objects` in [detect.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/detect.py).
 
-## Demo
 
 ### Work in progress
 
