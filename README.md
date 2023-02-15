@@ -331,6 +331,8 @@ predicted_locs = predicted_locs.unsqueeze(0)
 predicted_scores = predicted_scores.unsqueeze(0)
 ```
 
+Which, after a bit of tensor engineering, can be used for detecting the objects (see `detect_objects` in [detect.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/detect.py)
+
 ## Demo
 
 ### Work in progress
