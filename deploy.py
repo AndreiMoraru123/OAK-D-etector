@@ -40,6 +40,8 @@ def deploy_blob(model_name: str, output_dir: str):
     :return:
     """
 
+    print('Deploying model to Blob...')
+
     blobconverter.from_onnx(model=model_name+'-sim'+'.onnx',
                             output_dir=output_dir,
                             data_type='FP16',
@@ -53,8 +55,12 @@ if __name__ == "__main__":
                         help='the path to the model checkpoint')
     parser.add_argument('--new_model', default="ssd300", type=str,
                         help='the name of the ONNX model')
+    parser.add_argument('--deploy_blob', default=True, type=bool,
+                        help='deploy model to Blob')
 
     args = parser.parse_args()
 
     deploy(args.model, args.new_model)
-    deploy_blob(args.new_model, 'models')
+
+    if args.deploy_blob:
+        deploy_blob(args.new_model, 'models')
