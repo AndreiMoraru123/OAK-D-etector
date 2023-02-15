@@ -164,6 +164,8 @@ net = ie.read_network(model=new_model + '-sim' + '.onnx')
 exec_net = ie.load_network(network=net, device_name='MYRIAD')
 ```
 
+Which one of the two `MYRIAD` devices is the inference engine using? Whichever it finds first. You can specify the exact ID if you wanted. 
+
 Now I can use my `exec_net` to infer on my input data:
 
 ```python
@@ -193,7 +195,7 @@ cam_rgb.preview.link(xout_rgb.input)
 ```
 
 > **Note**
-> I deliberately do not create a DepthAI Neural Network node here, because I am running the inference via the OpenVINO ExecutableNetwork
+> I deliberately do not create a DepthAI Neural Network node here, because I am running the inference via the OpenVINO ExecutableNetwork.
 
 You can check out this awesome guide from [pyimagesearch](https://pyimagesearch.com/2022/12/19/oak-d-understanding-and-running-neural-network-inference-with-depthai-api/) to see exactly what each link means.
 
