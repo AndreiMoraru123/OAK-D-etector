@@ -164,7 +164,7 @@ switcher = {
 
 ### Running on CUDA via checkpoint
 
-This is straightforward, and not very interesting here. Since the tensors are already on cuda, I can just load the `checkpoint` in PyTorch and run the model using the forward call. I did put this option in here since it's the fastest, and best for showing demos.
+This is straightforward, and not very interesting here. Since the tensors are already on CUDA, I can just load the `checkpoint` in PyTorch and run the model using the forward call. I did put this option in here since it's the fastest, and best for showing demos. I could have also included `CPU` as an option that would have the same flow in the code, but why would anyone want that? Ha.
 
 ### Running on the NCS2/camera via OpenVINO's inference engine
 
