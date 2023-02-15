@@ -35,7 +35,9 @@ One such AI accelerator can be found in the [OAK-D camera](https://github.com/lu
 
 In order to communicate with the hardware, I am using both [DepthAI's api](https://docs.luxonis.com/en/latest/) to communicate with the RGB camera of the OAK-D, and Intel's [OpenVINO](https://docs.openvino.ai/latest/home.html) (Open Visual Inference and Neural Optimization) for deployment, both of which are still very much state of the art in Edge AI.
 
-Now, in order to use OpenVINO with hardware, I have to [download the distribution toolkit](https://docs.openvino.ai/2021.1/openvino_docs_install_guides_installing_openvino_windows.html). For compiling and running apps, the library prefers to set up temporary variables, so we will do it that way. For me, the path looks like this:
+Now, in order to use OpenVINO with hardware, I have to [download the distribution toolkit](https://docs.openvino.ai/2021.1/openvino_docs_install_guides_installing_openvino_windows.html). For compiling and running apps, the library prefers to set up temporary variables, so we will do it that way. 
+
+For me, the path looks like this:
 
 ```bash
 cd C:\Program Files (x86)\Intel\openvino_2022\w_openvino_toolkit_windows_2022.2.0.7713.af16ea1d79a_x86_64
