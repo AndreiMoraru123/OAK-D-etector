@@ -112,7 +112,7 @@ CPU: AMD Ryzen 7 4800H with Radeon Graphics
 GNA: GNA_SW
 ```
 
-#### Question: Why use both the NCS2 and the OAK-D if the OAK-D suffices?
+#### Question: Why use the NCS2 if the OAK-D can play the role of the VPU?
 #### Answer: No reason to! 
 Honestly, I just had one laying around, but since it's double the fun this way, I can run the frames on the camera, and compute on the stick.
 One could use just the camera's VPU the exact same way, using OpenVINO.
