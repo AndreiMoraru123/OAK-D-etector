@@ -25,7 +25,7 @@
 # Demo
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/81184255/219051190-03b0ee4c-c006-4fa6-ba9f-9e1ec8092a87.gif" with = "500" height = "300" />
+  <img src="https://user-images.githubusercontent.com/81184255/219051190-03b0ee4c-c006-4fa6-ba9f-9e1ec8092a87.gif" with = "400" height = "300" />
 </p>
 
 The original PyTorch implementation of the model, and the one that I am following here, is [this one](https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Object-Detection). 
