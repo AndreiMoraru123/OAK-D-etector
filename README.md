@@ -339,6 +339,8 @@ Which, after a bit of tensor engineering, can be used for detecting the objects 
 
 # Outro
 
-Ha
+### Ha
 
-![ha](https://user-images.githubusercontent.com/81184255/219082947-24ba1e97-6b24-4930-9a6c-87526d9d0494.jpg)
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/81184255/219082947-24ba1e97-6b24-4930-9a6c-87526d9d0494.jpg" with = "300" height = "500" />
+</p>
