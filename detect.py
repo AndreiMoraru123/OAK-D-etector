@@ -1,12 +1,13 @@
 import torch.nn.functional as F
 from utils import *
+from torch import Tensor
 
 checkpoint = torch.load('checkpoints/checkpoint_ssd300.pt', map_location='cuda')
 model = checkpoint['model']
 model.eval()
 
 
-def detect_objects(predicted_locs, predicted_scores, max_overlap, min_score, top_k):
+def detect_objects(predicted_locs: Tensor, predicted_scores: Tensor, max_overlap: float, min_score: float, top_k: int):
     """
     Decipher the 8732 locations and class scores and transform them into actual detections.
     Perform Non-Maximum Suppression (NMS) on the resulting detections.

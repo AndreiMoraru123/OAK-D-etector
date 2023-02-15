@@ -1,7 +1,6 @@
 import cv2
 import depthai as dai
 import argparse
-
 import numpy as np
 import openvino.inference_engine.ie_api as api
 from PIL import Image
@@ -69,6 +68,8 @@ def configure(is_blob: bool = False, blob_path: str = None) -> dai.Pipeline:
     cam_rgb.preview.link(xout_rgb.input)
 
     if is_blob:
+        cam_rgb.setPreviewSize(300, 300)
+        print("Creating Blob Neural Network...")
         nn = pipeline.createNeuralNetwork()
         xout_nn = pipeline.createXLinkOut()
         xout_nn.setStreamName("nn")
@@ -241,13 +242,107 @@ def run(pipeline, is_blob: bool = False, net=None, min_score: float = 0.2, max_o
         while True:
             in_rgb = q_rgb.tryGet()
 
-            if is_blob:
-                in_nn = q_nn.tryGet()
-
             if in_rgb is not None:
                 frame = in_rgb.getCvFrame()
 
-            if frame is not None:
+            if is_blob:
+                in_nn = q_nn.tryGet()
+
+                if in_nn is not None and frame is not None:
+                    predicted_locs = in_nn.getLayerFp16("boxes")
+                    predicted_scores = in_nn.getLayerFp16("scores")
+
+                    # Make numpy arrays
+                    predicted_locs = np.array(predicted_locs, dtype=np.float32)
+                    predicted_scores = np.array(predicted_scores, dtype=np.float32)
+
+                    # Reshape locs into 4 boxes * 8732 anchors
+                    predicted_locs = np.reshape(predicted_locs, (8732, 4))
+
+                    # Reshape scores into 21 classes * 8732 anchors
+                    predicted_scores = np.reshape(predicted_scores, (8732, 21))
+
+                    # Make torch tensors
+                    predicted_locs = torch.from_numpy(predicted_locs).to('cuda')
+                    predicted_scores = torch.from_numpy(predicted_scores).to('cuda')
+
+                    # Add batch dimension
+                    predicted_locs = predicted_locs.unsqueeze(0)
+                    predicted_scores = predicted_scores.unsqueeze(0)
+
+                    # Detect objects in SSD output
+                    det_boxes, det_labels, det_scores = detect_objects(predicted_locs, predicted_scores,
+                                                                       max_overlap=max_overlap,
+                                                                       min_score=min_score,
+                                                                       top_k=top_k)
+
+                    # Convert to PIL Image
+                    original_image = Image.fromarray(frame)
+
+                    # Move detections to CUDA
+                    det_boxes = det_boxes[0].to('cuda')
+
+                    # Transform to original image dimensions
+                    original_dims = torch.FloatTensor([original_image.width, original_image.height,
+                                                       original_image.width, original_image.height]).unsqueeze(0).to(
+                        'cuda')
+
+                    det_boxes = det_boxes * original_dims  # scale to original dimensions
+
+                    # Decode class integer labels
+                    det_labels = [rev_label_map[l] for l in det_labels[0].to('cuda').tolist()]
+
+                    # If no objects found, the detection pipeline has failed
+                    if det_boxes is None:
+                        print('No objects found!')
+
+                    box_locations, text_locations, text_box_locations = [], [], []
+
+                    # Suppress specific classes, if needed
+                    for i in range(det_boxes.size(0)):
+                        # if suppress is not None:
+                        #     if det_labels[i] in suppress:
+                        #         continue
+
+                        # Boxes
+                        box_location = det_boxes[i].tolist()
+                        box_locations.append(box_location)
+
+                        # Text
+                        text_size = cv2.getTextSize(det_labels[i].upper(),
+                                                    fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                                                    fontScale=0.5, thickness=1)[0]
+
+                        text_location = [box_location[0], box_location[1] - text_size[1]]
+                        text_locations.append(text_location)
+
+                        # TextBox
+                        text_box_location = [box_location[0], box_location[1] - text_size[1] - 20.,
+                                             box_location[0] + text_size[0] + 5., box_location[1]]
+                        text_box_locations.append(text_box_location)
+
+                    # Draw the bounding boxes on the frame
+                    for i in range(len(box_locations)):
+                        box_location = box_locations[i]
+                        text_location = text_locations[i]
+                        text_box_location = text_box_locations[i]
+                        box_location = [int(i) for i in box_location]
+                        text_location = [int(i) for i in text_location]
+                        text_box_location = [int(i) for i in text_box_location]
+                        cv2.rectangle(frame, (box_location[0], box_location[1]),
+                                      (box_location[2], box_location[3]), (0, 255, 0), 2)
+                        cv2.rectangle(frame, (text_box_location[0], text_box_location[1]),
+                                      (text_box_location[2], text_box_location[3]), (0, 255, 0), -1)
+                        cv2.putText(frame, det_labels[i].upper(), (text_location[0], text_location[1]),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+                    # Show the frame
+                    cv2.imshow("rgb", frame)
+
+                    if cv2.waitKey(1) == ord('q'):
+                        break
+
+            if frame is not None and not is_blob:
                 box_locations, text_locations, text_box_locations, det_labels = detect(net, frame, min_score=min_score,
                                                                                        max_overlap=max_overlap,
                                                                                        top_k=top_k)
@@ -291,8 +386,8 @@ def choose_hardware(hardware: str) -> object:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a PyTorch model on DepthAI')
     parser.add_argument('-usbs', type=str, default='usb2 usb3', help='the USB connection (usb2 or usb3)')
-    parser.add_argument('--is_blob', action='store_true', default=False, help='If the model is a blob')
-    parser.add_argument('--blob_path', type=str, default=None, help='Path to the blob file')
+    parser.add_argument('--is_blob', action='store_true', default=True, help='If the model is a blob')
+    parser.add_argument('--blob_path', type=str, default='models/ssd300-sim_openvino_2021.4_6shave.blob')
     parser.add_argument('--device', type=str, default="MYRIAD", help='the device to generate the engine for')
     parser.add_argument('--new_model', default="ssd300", type=str, help='the name of the ONNX model')
     parser.add_argument('--min_score', default=0.8, type=float, help='the minimum score for a box to be considered')

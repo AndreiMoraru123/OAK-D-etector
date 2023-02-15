@@ -57,3 +57,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     deploy(args.model, args.new_model)
+    deploy_blob(args.new_model, 'models')
