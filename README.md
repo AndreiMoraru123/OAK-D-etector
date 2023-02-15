@@ -28,6 +28,8 @@
   <img src="https://user-images.githubusercontent.com/81184255/219051190-03b0ee4c-c006-4fa6-ba9f-9e1ec8092a87.gif" with = "400" height = "300" />
 </p>
 
+# Intro
+
 The original PyTorch implementation of the model, and the one that I am following here, is [this one](https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Object-Detection). 
 This is a fantastic guide by itself and I did not modify much as of now. The goal for this project is to get to deploy such a custom model on real hardware, rather than neural network design.
 
