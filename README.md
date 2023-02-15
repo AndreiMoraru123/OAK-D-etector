@@ -291,8 +291,8 @@ if is_blob:
     cam_rgb.preview.link(nn.input)
 ```
 
-> **Note**
-> If the preview here is not in the shape of the input expected by the nn (300,300), the predicted bounding boxes will be out of sight.
+> **Warning**
+> If the preview here is not in the shape of the input expected by the Neural Network node (300,300), the predicted bounding boxes will be out of sight.
 
 After that, by queuing my nn:
 
