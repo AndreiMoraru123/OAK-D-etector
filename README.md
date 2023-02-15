@@ -180,7 +180,7 @@ net = ie.read_network(model=new_model + '-sim' + '.onnx')
 net = ie.load_network(network=net, device_name='MYRIAD')
 ```
 
-Which one of the two `MYRIAD` devices is the inference engine using? Whichever it finds first. You can specify the exact ID if you wanted. 
+Which one of the two `MYRIAD` devices is the inference engine using? Whichever it finds first. You can specify the exact ID if you want to. 
 
 Then I can use my `net` to infer on my input data:
 
