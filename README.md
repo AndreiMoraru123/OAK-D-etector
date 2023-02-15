@@ -22,18 +22,22 @@
   </tr>
 </table>
 
-The original implementation of the model, and the one that I am following here is [this one](https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Object-Detection). 
+The original PyTorch implementation of the model, and the one that I am following here, is [this one](https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Object-Detection). 
 This is a fantastic guide by itself and I did not modify much as of now. The goal for this project is to get to deploy such a custom model on real hardware, rather than neural network design.
 
-In this regard, I am using a [Luxonis OAK-D Lite](https://shop.luxonis.com/products/oak-d-lite-1) and an [Intel Neural Compute Stick 2](https://www.intel.com/content/www/us/en/developer/articles/tool/neural-compute-stick.html). Funnily enough, just as I finished this, the NCS2 became outdated, as you can see in the Intel docs, since Intel will be discontinuing it. But that besides the point here, as the main focus is deployment on specific hardware, whatever that hardware may be. 
+In this regard, I am using a [Luxonis OAK-D Lite](https://shop.luxonis.com/products/oak-d-lite-1) and an [Intel Neural Compute Stick 2](https://www.intel.com/content/www/us/en/developer/articles/guide/get-started-with-neural-compute-stick.html). Funnily enough, just as I finished this, the NCS2 became outdated, as you can see on the main page, since [Intel will be discontinuing it](https://www.intel.com/content/www/us/en/developer/articles/tool/neural-compute-stick.html). But that is besides the point here, as the main focus is deployment on specific hardware, whatever that hardware may be. 
 
-Namely, we are looking at VPU's, or [vision processing units](https://en.wikipedia.org/wiki/Vision_processing_unit). One such AI accelerator is found in the OAK-D camera itself! 
+Namely, we are looking at VPU's, or [vision processing units](https://en.wikipedia.org/wiki/Vision_processing_unit).
+
+One such AI accelerator can be found in the [OAK-D camera](https://github.com/luxonis/depthai-hardware/blob/master/DM9095_OAK-D-LITE_DepthAI_USB3C/Datasheet/OAK-D-Lite_Datasheet.pdf) itself! 
 
 ## Setup 
 
 In order to communicate with the hardware, I am using both [DepthAI's api](https://docs.luxonis.com/en/latest/) to communicate with the RGB camera of the OAK-D, and Intel's [OpenVINO](https://docs.openvino.ai/latest/home.html) (Open Visual Inference and Neural Optimization) for deployment, both of which are still very much state of the art in Edge AI.
 
-Now, in order to use OpenVINO with hardware, one has to [download the distribution toolkit](https://docs.openvino.ai/2021.1/openvino_docs_install_guides_installing_openvino_windows.html). For compiling and running apps, the library prefers to set up temporary variables, so we will do it that way. For me, the path looks like this:
+Now, in order to use OpenVINO with hardware, I have to [download the distribution toolkit](https://docs.openvino.ai/2021.1/openvino_docs_install_guides_installing_openvino_windows.html). For compiling and running apps, the library prefers to set up temporary variables, so we will do it that way. 
+
+For me, the path looks like this:
 
 ```bash
 cd C:\Program Files (x86)\Intel\openvino_2022\w_openvino_toolkit_windows_2022.2.0.7713.af16ea1d79a_x86_64
@@ -45,10 +49,11 @@ where I can now setup the variables by running the batch file:
 setupvars.bat
 ```
 
-One will get a message back saying: 
+I will get a message back saying: 
 
 ```bash
-OpenVINO environment initialized
+Python 3.7.7
+[setupvars.bat] OpenVINO environment initialized
 ```
 
 And now (and only now) can I open my Python editor from the same command prompt:
@@ -91,7 +96,7 @@ As you probably guessed, `MYRIAD` is the device I connected, and it is the same 
 
 Also, look, that's my `CPU`!
 
-OpenVINO can also be custom built for CUDA, just like one would do with OpenCV, which I did not here, but in which case the `CUDA` device will also show up. 
+OpenVINO can also be custom built for CUDA, very much like OpenCV, which I did not do here, but in that case the `CUDA` device will also show up. 
 
 If I run this script with both devices connected, you can see they get ID's, for the USB position they are taking in the connection (`.1` and `.3`):
 
@@ -111,10 +116,10 @@ CPU: AMD Ryzen 7 4800H with Radeon Graphics
 GNA: GNA_SW
 ```
 
-#### Question: Why use both the NCS2 and the OAK-D if the OAK-D suffices?
+#### Question: Why use the NCS2 if the OAK-D can play the role of the VPU?
 #### Answer: No reason to! 
 Honestly, I just had one laying around, but since it's double the fun this way, I can run the frames on the camera, and compute on the stick.
-One could use just the camera's VPU the exact same way, using OpenVINO.
+I could use just the camera's VPU the exact same way, using OpenVINO.
 
 ## Deployment
 
@@ -141,7 +146,13 @@ assert check, "Simplified ONNX model could not be validated"
 onnx.save(simple_model, new_model+'-sim'+'.onnx')
 ```
 
-After getting the model in `onnx` format, I can use OpenVINO's inference enginer to load it:
+Notice the `output_names` list given as a parameter. In the case of SSD, the model outputs both predicted locations (8731=priors, 4=coordinates) and class scores (8732=priors, 21=classes), like all object detectors. It's important to separate the two, which is easy to do with `torch.onnx.export`, but also easy to forget.
+
+## Running the model
+
+See [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py)
+
+After getting the model in `onnx` format, I can use OpenVINO's inference engine to load it:
 
 ```python
 from openvino.inference_engine import IECore
@@ -153,19 +164,40 @@ net = ie.read_network(model=new_model + '-sim' + '.onnx')
 exec_net = ie.load_network(network=net, device_name='MYRIAD')
 ```
 
-## Running the model
-
-See [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py)
+Which one of the two `MYRIAD` devices is the inference engine using? Whichever it finds first. You can specify the exact ID if you wanted. 
 
 Now I can use my `exec_net` to infer on my input data:
 
 ```python
-net.infer({'input': frame.unsqueeze(0).numpy()})  # inference on the camera frame.
+exec_net.infer({'input': frame.unsqueeze(0).numpy()})  # inference on the camera frame.
 ```
 
-That's it!
+And that's it!
 
-The rest of the code if configuring the [pipeline](https://docs.luxonis.com/projects/api/en/latest/components/pipeline/). You can check out this awesome guide from [pyimagesearch](https://pyimagesearch.com/2022/12/19/oak-d-understanding-and-running-neural-network-inference-with-depthai-api/) to see exactly what each link means.
+The rest of the code if configuring the [pipeline](https://docs.luxonis.com/projects/api/en/latest/components/pipeline/):
+
+```python
+ # Start defining a pipeline
+pipeline = dai.Pipeline()
+
+# Define sources and outputs
+cam_rgb = pipeline.createColorCamera()
+xout_rgb = pipeline.createXLinkOut()
+
+# Properties
+cam_rgb.setPreviewSize(1000, 500)
+cam_rgb.setInterleaved(False)
+cam_rgb.setFps(35)
+
+# Linking
+xout_rgb.setStreamName("rgb")
+cam_rgb.preview.link(xout_rgb.input)
+```
+
+> **Note**
+> I deliberately do not create a DepthAI Neural Network node here, because I am running the inference via the OpenVINO ExecutableNetwork.
+
+You can check out this awesome guide from [pyimagesearch](https://pyimagesearch.com/2022/12/19/oak-d-understanding-and-running-neural-network-inference-with-depthai-api/) to see exactly what each link means.
 
 ## Parallelization
 
@@ -178,7 +210,7 @@ exec_net = ie.load_network(network=net, device_name=device, num_requests=2)
 which I can then start asynchronously:
 
 ```python
- # Start the first inference request asynchronously
+# Start the first inference request asynchronously
 infer_request_handle1 = net.start_async(request_id=0, inputs={'input': image.unsqueeze(0).numpy()})
 
 # Start the second inference request asynchronously
@@ -220,6 +252,8 @@ if infer_request_handle2.wait() == 0:
 
 ## Demo
 
-## Work in progress
+## Blob inference to skip the OpenVINO API completely
+
+### Work in progress
 
 ![work in progress](https://user-images.githubusercontent.com/81184255/217096698-b6116802-cb00-412c-91b9-6b22d7718ead.png)
