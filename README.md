@@ -343,6 +343,7 @@ In [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py)
 
  ```python
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description='Run a PyTorch model on DepthAI')
     
     parser.add_argument('-usbs', type=str, default='usb2 usb3', help='the USB connection (usb2 or usb3)')
