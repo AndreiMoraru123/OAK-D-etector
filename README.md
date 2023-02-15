@@ -167,12 +167,35 @@ exec_net = ie.load_network(network=net, device_name='MYRIAD')
 Now I can use my `exec_net` to infer on my input data:
 
 ```python
-net.infer({'input': frame.unsqueeze(0).numpy()})  # inference on the camera frame.
+exec_net.infer({'input': frame.unsqueeze(0).numpy()})  # inference on the camera frame.
 ```
 
 And that's it!
 
-The rest of the code if configuring the [pipeline](https://docs.luxonis.com/projects/api/en/latest/components/pipeline/). You can check out this awesome guide from [pyimagesearch](https://pyimagesearch.com/2022/12/19/oak-d-understanding-and-running-neural-network-inference-with-depthai-api/) to see exactly what each link means.
+The rest of the code if configuring the [pipeline](https://docs.luxonis.com/projects/api/en/latest/components/pipeline/):
+
+```python
+ # Start defining a pipeline
+pipeline = dai.Pipeline()
+
+# Define sources and outputs
+cam_rgb = pipeline.createColorCamera()
+xout_rgb = pipeline.createXLinkOut()
+
+# Properties
+cam_rgb.setPreviewSize(1000, 500)
+cam_rgb.setInterleaved(False)
+cam_rgb.setFps(35)
+
+# Linking
+xout_rgb.setStreamName("rgb")
+cam_rgb.preview.link(xout_rgb.input)
+```
+
+> **Note**
+> I deliberately do not create a DepthAI Neural Network node here, because I am running the inference via the OpenVINO ExecutableNetwork
+
+You can check out this awesome guide from [pyimagesearch](https://pyimagesearch.com/2022/12/19/oak-d-understanding-and-running-neural-network-inference-with-depthai-api/) to see exactly what each link means.
 
 ## Parallelization
 
