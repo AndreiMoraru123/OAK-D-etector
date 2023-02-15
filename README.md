@@ -270,7 +270,7 @@ if infer_request_handle2.wait() == 0:
 
 I can skip OpenVINO completely and work with the neural network as a binary object.
 
-I still need to get my model in `onnx` format, but I need to convert it to binary using `blobconverter`. Take a look at `deploy_blob` in [deploy.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/deploy.py)
+I still need to get my model in `onnx` format, but I need to convert it to binary using `blobconverter`. Take a look at `deploy_blob` in [deploy.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/deploy.py).
 
 If I'm working with the blob, I need to create a `NeuralNetwork` node and link it's input to the camera preview like this:
 
@@ -331,7 +331,7 @@ predicted_locs = predicted_locs.unsqueeze(0)
 predicted_scores = predicted_scores.unsqueeze(0)
 ```
 
-Which, after a bit of tensor engineering, can be used for detecting the objects (see `detect_objects` in [detect.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/detect.py)
+Which, after a bit of tensor engineering, can be used for detecting the objects (see `detect_objects` in [detect.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/detect.py).
 
 ## Demo
 
