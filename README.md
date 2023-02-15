@@ -357,7 +357,7 @@ In [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py)
  
 Here, `usbs` is important depending on what type of port your connection uses, so it's safe to leave both `usb3` (accepted by default), as well as `usb2`. 
  
-The `device` and `hardware` play different roles. With `device` I just tell the inference engine what load the network on, because that function gets called anyway, regardless of the hardware choice. The actual choice is `hardware`, which can be either `NCS2`, `CUDA`, or `OAK-D`. For `CUDA` and `OAK-D` the parameter `is_blob` should be set to `False`, as it generates a pathway for creating a binary for the `OAK-D` to run on. As a consequence, it should be set to `True` when the `hardware` is `OAK-D`.
+The `device` and `hardware` play different roles. With `device` I just tell the inference engine what load the network on, because that function gets called anyway, regardless of the hardware choice. The actual choice is `hardware`, which can be either `NCS2`, `CUDA`, or `OAK-D`. For `CUDA` and `OAK-D` the parameter `is_blob` should be set to `False`, as it generates a pathway that creates a binary for the `OAK-D` to run on. As a consequence, it should be set to `True` when the `hardware` is `OAK-D`.
 
 # Outro
 
