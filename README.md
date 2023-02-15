@@ -302,7 +302,7 @@ I can get my predictions directly by using `get`:
 in_nn = q_nn.get()
 ```
 
-And now I can my outputs via the names I have exported them with by previously deploying as `onnx`:
+And now I can obtain the outputs via the names I have exported them with by previously deploying as `onnx`:
 
 ```python
 predicted_locs = in_nn.getLayerFp16("boxes")
