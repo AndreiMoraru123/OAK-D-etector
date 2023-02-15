@@ -339,7 +339,4 @@ Which, after a bit of tensor engineering, can be used for detecting the objects 
 
 # Outro
 
-![limit](https://user-images.githubusercontent.com/81184255/219060070-1f4e5c28-b3d8-44a3-9463-fa6d4a7ff36e.gif)
-
-
-
+![ha](https://user-images.githubusercontent.com/81184255/219082947-24ba1e97-6b24-4930-9a6c-87526d9d0494.jpg)
