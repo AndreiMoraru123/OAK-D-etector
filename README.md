@@ -152,6 +152,22 @@ Notice the `output_names` list given as a parameter. In the case of SSD, the mod
 
 See [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py)
 
+#### There are three options for inference hardware, and I will go through all of them:
+
+```python
+switcher = {
+        "NCS2": generate_engine(args.new_model, args.device),  # inference engine for the NCS2
+        "CUDA": model,  # since tensors are already on CUDA, the model is just the loaded checkpoint
+        "OAK-D": None  # since the model is already on the device, this is just using the blob boolean
+}
+```
+
+### Running on CUDA via checkpoint
+
+This is straightforward, and not very interesting here. Since the tensors are already on cuda, I can just load the `checkpoint` in PyTorch and run the model using the forward call. I did put this option in here since it's the fastest, and best for showing demos.
+
+### Running on the NCS2/camera via OpenVINO's inference engine
+
 After getting the model in `onnx` format, I can use OpenVINO's inference engine to load it:
 
 ```python
@@ -199,7 +215,7 @@ cam_rgb.preview.link(xout_rgb.input)
 
 You can check out this awesome guide from [pyimagesearch](https://pyimagesearch.com/2022/12/19/oak-d-understanding-and-running-neural-network-inference-with-depthai-api/) to see exactly what each link means.
 
-## Parallelization
+#### Parallelization
 
 OpenVINO has this cool feature where I can infer on multiple threads. In order to do this, I only have to change the loading to accomodate multiple requests:
 
@@ -250,9 +266,72 @@ if infer_request_handle2.wait() == 0:
 
 ```
 
-## Demo
+### Running on the OAK-D using `blob` format
 
-## Blob inference to skip the OpenVINO API completely
+I can skip OpenVINO completely and work with the neural network as a binary object.
+
+I still need to get my model in `onnx` format, but I need to convert it to binary using `blobconverter`. Take a look at `deploy_blob` in [deploy.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/deploy.py)
+
+If I'm working with the blob, I need to create a `NeuralNetwork` node and link it's input to the camera preview like this:
+
+```python
+if is_blob:
+    cam_rgb.setPreviewSize(300, 300)  # Note the dimension here
+    print("Creating Blob Neural Network...")
+    nn = pipeline.createNeuralNetwork()
+    xout_nn = pipeline.createXLinkOut()
+    xout_nn.setStreamName("nn")
+    nn.out.link(xout_nn.input)
+
+    nn.setBlobPath(Path(blob_path))
+    nn.setNumInferenceThreads(2)
+    nn.input.setBlocking(False)
+    nn.setNumPoolFrames(4)
+
+    cam_rgb.preview.link(nn.input)
+```
+
+> **Note**
+> If the preview here is not in the shape of the input expected by the nn (300,300), the predicted bounding boxes will be out of sight.
+
+After that, by queuing my nn:
+
+```python
+q_nn = device.getOutputQueue(name="nn", maxSize=4, blocking=False)
+```
+
+I can get my predictions directly by using `get`:
+
+```python
+in_nn = q_nn.get()
+```
+
+And now I can my outputs via the names I have exported them with by previously deploying as `onnx`:
+
+```python
+predicted_locs = in_nn.getLayerFp16("boxes")
+predicted_scores = in_nn.getLayerFp16("scores")
+
+# Make numpy arrays
+predicted_locs = np.array(predicted_locs, dtype=np.float32)
+predicted_scores = np.array(predicted_scores, dtype=np.float32)
+
+# Reshape locs into 4 boxes * 8732 anchors
+predicted_locs = np.reshape(predicted_locs, (8732, 4))
+
+# Reshape scores into 21 classes * 8732 anchors
+predicted_scores = np.reshape(predicted_scores, (8732, 21))
+
+# Make torch tensors
+predicted_locs = torch.from_numpy(predicted_locs).to('cuda')
+predicted_scores = torch.from_numpy(predicted_scores).to('cuda')
+
+# Add batch dimension
+predicted_locs = predicted_locs.unsqueeze(0)
+predicted_scores = predicted_scores.unsqueeze(0)
+```
+
+## Demo
 
 ### Work in progress
 
