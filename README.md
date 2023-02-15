@@ -177,15 +177,15 @@ ie = IECore()
 net = ie.read_network(model=new_model + '-sim' + '.onnx')
 
 # Load model to the device
-exec_net = ie.load_network(network=net, device_name='MYRIAD')
+net = ie.load_network(network=net, device_name='MYRIAD')
 ```
 
 Which one of the two `MYRIAD` devices is the inference engine using? Whichever it finds first. You can specify the exact ID if you wanted. 
 
-Then I can use my `exec_net` to infer on my input data:
+Then I can use my `net` to infer on my input data:
 
 ```python
-exec_net.infer({'input': frame.unsqueeze(0).numpy()})  # inference on the camera frame.
+net.infer({'input': frame.unsqueeze(0).numpy()})  # inference on the camera frame.
 ```
 
 And that's it! I can now configure the pipeline:
@@ -216,7 +216,7 @@ cam_rgb.preview.link(xout_rgb.input)
 OpenVINO has this cool feature where I can infer on multiple threads. In order to do this, I only have to change the loading to accomodate multiple requests:
 
 ```python
-exec_net = ie.load_network(network=net, device_name=device, num_requests=2)
+net = ie.load_network(network=net, device_name=device, num_requests=2)
 ```
 
 which I can then start asynchronously:
