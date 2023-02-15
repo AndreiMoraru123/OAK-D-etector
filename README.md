@@ -337,7 +337,7 @@ predicted_scores = predicted_scores.unsqueeze(0)
 
 Which, after a bit of tensor engineering, can be used for detecting the objects (see `detect_objects` in [detect.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/detect.py).
 
-## Outro
+# Outro
 
 ![limit](https://user-images.githubusercontent.com/81184255/219060070-1f4e5c28-b3d8-44a3-9463-fa6d4a7ff36e.gif)
 
