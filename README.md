@@ -92,7 +92,7 @@ As you probably guessed, `MYRIAD` is the device I connected, and it is the same 
 
 Also, look, that's my `CPU`!
 
-OpenVINO can also be custom built for CUDA, just like one would do with OpenCV, which I did not here, but in which case the `CUDA` device will also show up. 
+OpenVINO can also be custom built for CUDA, very much like OpenCV, which I did not do here, but in that case the `CUDA` device will also show up. 
 
 If I run this script with both devices connected, you can see they get ID's, for the USB position they are taking in the connection (`.1` and `.3`):
 
