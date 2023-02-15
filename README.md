@@ -156,9 +156,9 @@ See [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py
 
 ```python
 switcher = {
-        "NCS2": generate_engine(args.new_model, args.device),  # inference engine for the NCS2
-        "CUDA": model,  # since tensors are already on CUDA, the model is just the loaded checkpoint
-        "OAK-D": None  # since the model is already on the device, this is just using the blob boolean
+    "NCS2": generate_engine(args.new_model, args.device),  # inference engine for the NCS2
+    "CUDA": model,  # since tensors are already on CUDA, the model is just the loaded checkpoint
+    "OAK-D": None  # since the model is already on the device, this is just using the blob boolean
 }
 ```
 
