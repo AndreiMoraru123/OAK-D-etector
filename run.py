@@ -309,8 +309,8 @@ def choose_hardware(hardware: str) -> object:
     """
 
     switcher = {
-        "MYRIAD": generate_engine(args.new_model, args.device),
-        "CUDA": model,  # since tensors are already on CUDA, the model is basically the same
+        "NCS2": generate_engine(args.new_model, args.device),  # inference engine for the NCS2
+        "CUDA": model,  # since tensors are already on CUDA, the model is just the loaded checkpoint
         "OAK-D": None  # since the model is already on the device, this is just using the blob boolean
     }
 
@@ -326,8 +326,8 @@ if __name__ == '__main__':
     parser.add_argument('--min_score', default=0.8, type=float, help='the minimum score for a box to be considered')
     parser.add_argument('--max_overlap', default=0.5, type=float, help='the maximum overlap for a box to be considered')
     parser.add_argument('--top_k', default=200, type=int, help='the maximum number of boxes to be considered')
-    parser.add_argument('--hardware', type=str, default="OAK-D", help='the hardware to run the model on')
-    parser.add_argument('--is_blob', action='store_true', default=True, help='If the model is a blob')
+    parser.add_argument('--hardware', type=str, default="NCS2", help='the hardware to run the model on')
+    parser.add_argument('--is_blob', action='store_true', default=False, help='If the model is a blob')
 
     args = parser.parse_args()
 
