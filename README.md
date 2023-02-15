@@ -191,7 +191,7 @@ net.infer({'input': frame.unsqueeze(0).numpy()})  # inference on the camera fram
 And that's it! I can now configure the pipeline:
 
 ```python
- # Start defining a pipeline
+# Start defining a pipeline
 pipeline = dai.Pipeline()
 
 # Define sources and outputs
