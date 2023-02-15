@@ -27,7 +27,9 @@ This is a fantastic guide by itself and I did not modify much as of now. The goa
 
 In this regard, I am using a [Luxonis OAK-D Lite](https://shop.luxonis.com/products/oak-d-lite-1) and an [Intel Neural Compute Stick 2](https://www.intel.com/content/www/us/en/developer/articles/guide/get-started-with-neural-compute-stick.html). Funnily enough, just as I finished this, the NCS2 became outdated, as you can see in the Intel docs, since [Intel will be discontinuing](https://www.intel.com/content/www/us/en/developer/articles/tool/neural-compute-stick.html) it. But that is besides the point here, as the main focus is deployment on specific hardware, whatever that hardware may be. 
 
-Namely, we are looking at VPU's, or [vision processing units](https://en.wikipedia.org/wiki/Vision_processing_unit). One such AI accelerator is found in the OAK-D camera itself! 
+Namely, we are looking at VPU's, or [vision processing units](https://en.wikipedia.org/wiki/Vision_processing_unit).
+
+One such AI accelerator can be found in the [OAK-D camera](https://github.com/luxonis/depthai-hardware/blob/master/DM9095_OAK-D-LITE_DepthAI_USB3C/Datasheet/OAK-D-Lite_Datasheet.pdf) itself! 
 
 ## Setup 
 
