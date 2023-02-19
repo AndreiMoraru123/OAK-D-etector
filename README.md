@@ -25,7 +25,7 @@
 # Demo
 
 <p align="center">
-  <img src="https://thumbs.gfycat.com/TiredLinearAtlanticspadefish-size_restricted.gif" alt="SSD" width="800" height="500">
+  <img src="https://thumbs.gfycat.com/TiredLinearAtlanticspadefish-size_restricted.gif" alt="SSD" width="700" height="400">
 </p>
 
 
