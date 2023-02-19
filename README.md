@@ -25,8 +25,9 @@
 # Demo
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/81184255/219051190-03b0ee4c-c006-4fa6-ba9f-9e1ec8092a87.gif" with = "400" height = "300" />
+  <img src="https://thumbs.gfycat.com/TiredLinearAtlanticspadefish-size_restricted.gif" alt="SSD" width="800" height="500">
 </p>
+
 
 # Intro
 
