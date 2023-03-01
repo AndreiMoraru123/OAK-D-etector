@@ -25,13 +25,15 @@
 # Demo
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/81184255/219051190-03b0ee4c-c006-4fa6-ba9f-9e1ec8092a87.gif" with = "400" height = "300" />
+  <img src="https://thumbs.gfycat.com/TiredLinearAtlanticspadefish-size_restricted.gif" alt="SSD" width="700" height="400">
 </p>
+
 
 # Intro
 
-The original PyTorch implementation of the model, and the one that I am following here, is [this one](https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Object-Detection). 
-This is a fantastic guide by itself and I did not modify much as of now. The goal for this project is to get to deploy such a custom model on real hardware, rather than neural network design.
+The original PyTorch implementation of the model, and the one that I am following here, is [this one](https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Object-Detection). This is a fantastic guide by itself and I did not modify much as of now. The model was trained on [Pascal VOC 2007-2012](http://host.robots.ox.ac.uk/pascal/VOC/). Here is a [mirror](https://pjreddie.com/projects/pascal-voc-dataset-mirror/).
+
+The goal for this project is to get to deploy such a custom model on real hardware, rather than neural network design.
 
 In this regard, I am using a [Luxonis OAK-D Lite](https://shop.luxonis.com/products/oak-d-lite-1) and an [Intel Neural Compute Stick 2](https://www.intel.com/content/www/us/en/developer/articles/guide/get-started-with-neural-compute-stick.html). Funnily enough, just as I finished this, the NCS2 became outdated, as you can see on the main page, since [Intel will be discontinuing it](https://www.intel.com/content/www/us/en/developer/articles/tool/neural-compute-stick.html). But that is besides the point here, as the main focus is deployment on specific hardware, whatever that hardware may be. 
 
@@ -337,9 +339,36 @@ predicted_scores = predicted_scores.unsqueeze(0)
 
 Which, after a bit of tensor engineering, can be used for detecting the objects (see `detect_objects` in [detect.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/detect.py).
 
+# Putting it all together
+
+In [run.py](https://github.com/AndreiMoraru123/ObjectDetection/blob/main/run.py), which acts as the main file, the following argument parsers are present:
+
+ ```python
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description='Run a PyTorch model on DepthAI')
+    
+    parser.add_argument('-usbs', type=str, default='usb2 usb3', help='the USB connection (usb2 or usb3)')
+    parser.add_argument('--blob_path', type=str, default='models/ssd300-sim_openvino_2021.4_6shave.blob')
+    parser.add_argument('--device', type=str, default="MYRIAD", help='the device to generate the engine for')
+    parser.add_argument('--new_model', default="ssd300", type=str, help='the name of the ONNX model')
+    parser.add_argument('--min_score', default=0.8, type=float, help='the minimum score for a box to be considered')
+    parser.add_argument('--max_overlap', default=0.5, type=float, help='the maximum overlap for a box to be considered')
+    parser.add_argument('--top_k', default=200, type=int, help='the maximum number of boxes to be considered')
+    parser.add_argument('--hardware', type=str, default="CUDA", help='the hardware to run the model on')
+    parser.add_argument('--is_blob', action='store_true', default=False, help='If the model is a blob')
+
+    args = parser.parse_args()
+ ```
+ 
+Here, `usbs` is important depending on what type of port your connection uses, so it's safe to leave both `usb3` (accepted by default), as well as `usb2`. 
+ 
+The `device` and `hardware` play different roles. With `device` I just tell the inference engine what load the network on, because that function gets called anyway, regardless of the hardware choice. The actual choice is `hardware`, which can be either `NCS2`, `CUDA`, or `OAK-D`. For `CUDA` and `OAK-D` the parameter `is_blob` should be set to `False`, as it generates a pathway that creates a binary for the `OAK-D` to run on. As a consequence, it should be set to `True` when the `hardware` is `OAK-D`.
+
 # Outro
 
-![limit](https://user-images.githubusercontent.com/81184255/219060070-1f4e5c28-b3d8-44a3-9463-fa6d4a7ff36e.gif)
+### Ha
 
-
-
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/81184255/219082947-24ba1e97-6b24-4930-9a6c-87526d9d0494.jpg" with = "300" height = "500" />
+</p>
