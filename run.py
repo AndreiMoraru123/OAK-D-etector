@@ -318,7 +318,9 @@ def choose_hardware(hardware: str) -> object:
 
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description='Run a PyTorch model on DepthAI')
+
     parser.add_argument('-usbs', type=str, default='usb2 usb3', help='the USB connection (usb2 or usb3)')
     parser.add_argument('--blob_path', type=str, default='models/ssd300-sim_openvino_2021.4_6shave.blob')
     parser.add_argument('--device', type=str, default="MYRIAD", help='the device to generate the engine for')
@@ -326,7 +328,7 @@ if __name__ == '__main__':
     parser.add_argument('--min_score', default=0.8, type=float, help='the minimum score for a box to be considered')
     parser.add_argument('--max_overlap', default=0.5, type=float, help='the maximum overlap for a box to be considered')
     parser.add_argument('--top_k', default=200, type=int, help='the maximum number of boxes to be considered')
-    parser.add_argument('--hardware', type=str, default="NCS2", help='the hardware to run the model on')
+    parser.add_argument('--hardware', type=str, default="CUDA", help='the hardware to run the model on')
     parser.add_argument('--is_blob', action='store_true', default=False, help='If the model is a blob')
 
     args = parser.parse_args()
