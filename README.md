@@ -218,7 +218,7 @@ xout_rgb.setStreamName("rgb")
 cam_rgb.preview.link(xout_rgb.input)
 ```
 
-> **Note**
+> [!NOTE]\
 > I deliberately do not create a DepthAI Neural Network node here, because I am running the inference via the OpenVINO ExecutableNetwork.
 
 ### Parallelization & Ouputs
