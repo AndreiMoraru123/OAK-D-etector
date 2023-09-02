@@ -24,8 +24,9 @@
 
 # Demo
 
+
 <p align="center">
-  <img src="https://thumbs.gfycat.com/TiredLinearAtlanticspadefish-size_restricted.gif" alt="SSD" width="700" height="400">
+  <img src="https://github.com/AndreiMoraru123/ObjectDetection/assets/81184255/ba4943ef-f9a0-49f6-84fb-6753b9a50fa0" alt="SSD" width="700" height="400">
 </p>
 
 
